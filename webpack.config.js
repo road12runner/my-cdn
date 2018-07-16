@@ -1,7 +1,13 @@
+const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
 	entry: './src/index.js',
 	output: {
-		filename: 'bundle.js'
+		filename: 'embed.min.js',
+		library: 'aam',
+		libraryTarget:'umd'
 	},
 
 	module: {
@@ -11,7 +17,26 @@ module.exports = {
 				use: 'babel-loader'
 			}
 		]
-	}
+	},
+	plugins: [
+		new HtmlWebpackPlugin({
+			filename: 'index.html',
+			template: 'src/assets/index.template.html',
+		}),
+		new CopyWebpackPlugin([
+			'src/assets/app.js'
+		]),
+		new HtmlWebpackIncludeAssetsPlugin({
+			assets: ['app.js'],
+			append: true
+		}),
+		new webpack.ProvidePlugin(
+			{
+				$: 'jquery',
+			}
+		)
+	],
+	devtool: 'cheap-module-source-map'
 };
 
 /*
