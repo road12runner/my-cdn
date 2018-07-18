@@ -1,0 +1,1 @@
+export const GALLERY_LOADED = 'ssg-designer::galleries-loaded';

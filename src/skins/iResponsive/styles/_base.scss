@@ -1,0 +1,19 @@
+$pinkColor: pink;
+
+.aam-designer-init {
+    border: 1px solid $pinkColor;
+    max-width: 743px;
+    max-height: 450px;
+    width: 100%;
+    height: 450px;
+
+    box-sizing: border-box;
+
+    .main-container {
+        width: 100%;
+        height: 100%;
+    }
+
+
+
+}
