@@ -1,7 +1,13 @@
 import Card from './Card';
+import {getEventPosition} from './canvas-helper'
+import  Hammer from 'hammerjs';
+
 class Canvas {
 
 	constructor (designerSettings, canvasElement, options = {}) {
+
+		console.log('hammer', Hammer);
+
 		this.canvas = document.querySelector(canvasElement);
 		this.ctx = this.canvas.getContext('2d');
 
@@ -34,6 +40,28 @@ class Canvas {
 
 
 
+		// mouse events
+		this.canvas.addEventListener('mousedown', e => this.startEvent(e));
+		this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
+		this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
+
+
+		const mc = new Hammer.Manager(this.canvas);
+// // create a pinch and rotate recognizer
+// // these require 2 pointers
+// 		var pinch = new Hammer.Pinch();
+// 		var rotate = new Hammer.Rotate();
+//
+// // we want to detect both the same time
+// 		pinch.recognizeWith(rotate);
+//
+// // add to the Manager
+// 		mc.add([pinch, rotate]);
+//
+//
+// 		mc.on("pinch rotate", function(ev) {
+// 			myElement.textContent += ev.type +" ";
+// 		});
 
 		window.requestAnimationFrame(() => this.drawCard());
 
@@ -50,9 +78,34 @@ class Canvas {
 
 	}
 
+	startEvent(e) {
+
+		//TODO find selected item on card if any
+
+
+		const pos = getEventPosition(event);
+		this.card.selected = true;
+		this.card.click(pos)
+
+	}
+
+
+	keepEvent(e) {
+		const pos = getEventPosition(e);
+		this.card.hover(pos);
+	}
+
+	finishEvent (e) {
+
+		this.card.done();
+	}
+
 	setImage(imageUrl) {
 		this.card.setImage(imageUrl);
 	}
+
+
+
 
 
 }

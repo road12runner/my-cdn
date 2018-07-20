@@ -2,7 +2,7 @@ import template from './templates/designer.tmpl';
 
 import Canvas from '../../core/canvas/Canvas';
 import GalleryManager from '../../core/gallery/GaleryManager';
-import AppSettings from './AppSettings';
+import AppSettings from '../../core/AppSettings';
 
 import {GALLERY_LOADED} from '../../core/eventTypes';
 class Designer {

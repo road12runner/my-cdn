@@ -32,3 +32,21 @@ export function roundRect (ctx, x, y, width, height, radius, fill, stroke) {
 	}
 
 }
+
+export function isInside (pos, area) {
+	return (pos.x >= area.x - 5 && pos.x <= area.x + 5)
+		&& (pos.y >= area.y - 5 && pos.y <= area.y + 5);
+}
+
+
+export function getEventPosition (event) {
+
+	const rect = event.currentTarget.getBoundingClientRect();
+	const eventX = event.touches ? event.touches[0].clientX : event.clientX;
+	const eventY = event.touches ? event.touches[0].clientY : event.clientY;
+	return {
+		x: eventX - rect.left,
+		y: eventY - rect.top
+	};
+}
+

@@ -4,7 +4,7 @@ import designerTemplate from './templates/designer.tmpl';
 
 import MainContainer  from './MainContainer';
 import GalleryManager from '../../core/gallery/GaleryManager';
-import AppSettings from './AppSettings';
+import AppSettings from '../../core/AppSettings';
 
 class App {
 	
@@ -30,6 +30,7 @@ class App {
 		const {width, height} = this.rootElement.getBoundingClientRect();
 
 		console.log(width, height);
+
 
 
 		api.getDesigner(this.handoverKey).then(response => {

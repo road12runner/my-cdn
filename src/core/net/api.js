@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 //const  = ServerSide.Configuration.Urls.Api;
-const hostname = 'https://localhost/api';
-
+//const hostname = 'https://localhost/api';
+const hostname = 'https://devserver.serversidegraphics.com/pcs/api/v1';
+// https://devserver.serversidegraphics.com/pcs/api/v1/designers/21b32de0-09de-4ec2-a505-1a00eb9d3ac4
 
 function createQuery(arr) {
 	const qs = [];
@@ -13,30 +14,40 @@ function createQuery(arr) {
 }
 
 
-function performGetRequest(url) {
+async function performGetRequest(url) {
 
-	return new Promise( (resolve, reject) => {
-			axios.get(url).then( response => {
+	let  result;
+	try {
+		const response = await axios.get(url);
+		result = response.data;
+	} catch (e) {
+		console.log('error', e);
+	}
 
-				if (response.status === 200) {
-					resolve(response.data);
-				} else {
-					console.error('Oops. Api response has bad status', response.status);
-					resolve(null);
-				}
+	return result;
 
-
-			}).catch( error => {
-				console.error('Failed to perform api request', error);
-				resolve(null);
-			})
-	});
+	// return new Promise( (resolve, reject) => {
+	// 		axios.get(url).then( response => {
+	//
+	// 			if (response.status === 200) {
+	// 				resolve(response.data);
+	// 			} else {
+	// 				console.error('Oops. Api response has bad status', response.status);
+	// 				resolve(null);
+	// 			}
+	//
+	//
+	// 		}).catch( error => {
+	// 			console.error('Failed to perform api request', error);
+	// 			resolve(null);
+	// 		})
+	// });
 
 }
 
 
-export function getDesigner(handoverKey) {
-	return performGetRequest([hostname, 'designers', handoverKey, ].join('/'));
+export async function getDesigner(handoverKey) {
+	return await performGetRequest([hostname, 'designers', handoverKey, ].join('/'));
 }
 
 
