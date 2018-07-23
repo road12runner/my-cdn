@@ -45,23 +45,99 @@ class Canvas {
 		this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
 		this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
 
+		
+		
+		
 
 		const mc = new Hammer.Manager(this.canvas);
-// // create a pinch and rotate recognizer
-// // these require 2 pointers
-// 		var pinch = new Hammer.Pinch();
-// 		var rotate = new Hammer.Rotate();
-//
-// // we want to detect both the same time
-// 		pinch.recognizeWith(rotate);
-//
-// // add to the Manager
-// 		mc.add([pinch, rotate]);
-//
-//
-// 		mc.on("pinch rotate", function(ev) {
-// 			myElement.textContent += ev.type +" ";
-// 		});
+		// create a pinch and rotate recognizer
+		// these require 2 pointers
+		const pinch = new Hammer.Pinch();
+		const rotate = new Hammer.Rotate();
+		const pan = new Hammer.Pan();
+
+		// we want to detect both the same time
+		pinch.recognizeWith(rotate);
+
+		// add to the Manager
+		mc.add([pinch, rotate, pan]);
+
+		
+		// setTimeout( () => {
+		// 	//this.card.scale(1.5);
+		// }, 3000);
+
+		mc.on("pinch", ev => {
+			
+			
+			// if (ev.type === 'pinch') {
+			//
+			// 	//document.querySelector('#log').innerHTML += ev.scale +" ";
+			//
+			// 	// if (!ev || !ev.scale) {
+			// 	// 	debugger;
+			// 	// }
+			//
+			// 	this.card.scale(ev.scale);
+			// }
+			// document.querySelector('#log').innerHTML += ev.scale +" ";
+			// this.card.scale(e.scale);
+//			document.querySelector('#log').innerHTML += ev.type +" ";
+			// if (ev.type === 'pinch') {
+			// 	document.querySelector('#log').innerHTML += ev.scale +" ";
+			// } else if (ev.type === 'rotate') {
+			// 	document.querySelector('#log').innerHTML += ev.rotation +" ";
+			// }
+
+			//myElement.textContent += ev.type +" ";
+		});
+		
+		let currentRotation = 0, lastRotation, startRotation;
+		mc.on('rotatestart', e => {
+			lastRotation = currentRotation;
+			startRotation = Math.round(e.rotation);
+			//document.querySelector('#log').innerHTML +=  " rotation start: "  +  startRotation;
+		});
+		
+		mc.on('rotateend', e=> {
+			lastRotation = currentRotation;
+			//document.querySelector('#log').innerHTML +=  " rotation end: "  +  lastRotation;
+		});
+		
+		mc.on('rotatemove', e =>{
+			const diff = Math.round(e.rotation) - startRotation;
+			currentRotation = lastRotation - diff;
+			
+			this.card.rotate(diff);
+		});
+		
+		
+		
+		let currentScale;
+		mc.on('pinchstart', e => {
+			currentScale = e.scale;
+			//document.querySelector('#log').innerHTML +=  " pinch start: "  +  startScale;
+		});
+
+		mc.on('pinchend', e=> {
+			//lastScale = currentScale;
+			//document.querySelector('#log').innerHTML +=  " pinch end: "  +  lastScale;
+		});
+
+		mc.on('pinchmove', e =>{
+			const diff = e.scale - currentScale;
+			//document.querySelector('#log').innerHTML +=  " pinch: "  +  diff;
+			this.card.scale( 1+ diff / 4); // put coefficient for scaling
+			currentScale = e.scale;
+		});
+
+		
+		mc.on('pan', e => {
+			this.card.move({
+				x: e.deltaX / 10,
+				y: e.deltaY /10
+			});
+		});
 
 		window.requestAnimationFrame(() => this.drawCard());
 

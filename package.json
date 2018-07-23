@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "webpack-dev-server": "webpack-dev-server",
+        "webpack-dev-server": "webpack-dev-server --host 0.0.0.0",
         "prod": "webpack --env.mode production",
         "dev": "npm run webpack-dev-server -- --env.mode development --hot",
         "dev:iResponsive": "npm run dev -- --env.skin iResponsive",

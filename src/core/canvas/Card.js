@@ -221,6 +221,25 @@ class Card  extends  CanvasObject{
 	done () {
 		this.action = CANVAS_ACTIONS.NOTHING;
 	}
+	
+	rotate (angle) {
+		//document.querySelector('#log').innerHTML +=  " rotation: "  +  angle;
+		this.rotation = angle;
+	}
+	
+	scale (val) {
+		const ratio = this.width / this.height;
+		document.querySelector('#log').innerHTML +=  " scale: "  +  val;
+
+		this.width *= val;
+		this.height = this.width / ratio;
+		
+	}
+	
+	move(pos) {
+		this.originPoint.x += pos.x;
+		this.originPoint.y += pox.y;
+	}
 
 
 }
