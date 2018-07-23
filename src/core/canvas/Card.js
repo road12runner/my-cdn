@@ -108,6 +108,8 @@ class Card  extends  CanvasObject{
 			ctx.fill();
 			ctx.stroke();
 
+
+
 		}
 
 
@@ -131,6 +133,23 @@ class Card  extends  CanvasObject{
 		ctx.restore();
 
 		ctx.drawImage(this.template.image, this.template.x, this.template.y, this.template.width, this.template.height);
+
+		if (this.mousePos) {
+			ctx.beginPath();
+			ctx.arc(this.mousePos.x, this.mousePos.y, 5, 0, 2 * Math.PI);
+			ctx.fillStyle = 'red';
+			ctx.fill();
+			ctx.stroke();
+		}
+
+		if (this.originPoint) {
+			ctx.beginPath();
+			ctx.arc(this.originPoint.x, this.originPoint.y, 5, 0, 2 * Math.PI);
+			ctx.fillStyle = 'pink';
+			ctx.fill();
+			ctx.stroke();
+		}
+
 
 	}
 
@@ -184,11 +203,22 @@ class Card  extends  CanvasObject{
 
 		} else if (this.action === CANVAS_ACTIONS.MOVING) {
 
-			const deltaX = pos.x - this.mousePos.x;
-			const deltaY = pos.y - this.mousePos.y;
-			this.originPoint.x +=  deltaX;
-			this.originPoint.y +=  deltaY;
-			this.mousePos = pos;
+
+			// const offset = {
+			// 	x: this.mousePos.x - this.originPoint.x,
+			// 	y: this.mousePos.y - this.originPoint.y
+			// } ;
+			console.log(this.offset, pos, this.originPoint);
+
+			if (this.offset) {
+
+			}
+			this.originPoint.x =  pos.x - this.offset.x;
+			this.originPoint.y =  pos.y - this.offset.y;
+
+			console.log(this.originPoint);
+
+//			this.mousePos = pos;
 		}
 	}
 
@@ -210,9 +240,14 @@ class Card  extends  CanvasObject{
 		} else if (pos.x >= cardArea.x && pos.x <= cardArea.width
 			&& pos.y >= cardArea.y && pos.y <= cardArea.height) {
 			this.action = CANVAS_ACTIONS.MOVING;
-			this.mousePos = pos;
+			this.offset = {
+				x: pos.x - this.originPoint.x,
+				y: pos.y - this.originPoint.y
+			} ;
+
 		} else {
 			this.action = CANVAS_ACTIONS.NOTHING;
+			this.offset = null;
 		}
 
 	}
@@ -220,6 +255,9 @@ class Card  extends  CanvasObject{
 	// done with event
 	done () {
 		this.action = CANVAS_ACTIONS.NOTHING;
+		this.savedRotation = null;
+		this.savedOrigPoing = null;
+		this.savedSize = null;
 	}
 	
 	rotate (angle) {
@@ -238,8 +276,61 @@ class Card  extends  CanvasObject{
 	
 	move(pos) {
 		this.originPoint.x += pos.x;
-		this.originPoint.y += pox.y;
+		this.originPoint.y += pos.y;
 	}
+
+
+
+	startMove() {
+		this.savedOrigPoing = Object.assign({}, this.originPoint);
+	}
+
+	doMove(pos) {
+		if (this.savedOrigPoing) {
+			this.originPoint = {
+				x: this.savedOrigPoing.x + pos.x,
+				y: this.savedOrigPoing.y + pos.y
+			}
+		}
+	}
+
+	endMove() {
+		this.done();
+	}
+
+
+	startRotate() {
+		this.savedRotation = this.rotation;
+	}
+
+	doRotate(angle) {
+		if (this.savedRotation) {
+			this.rotation = this.savedRotation + angle;
+		}
+	}
+
+	endRotate() {
+		this.done();
+	}
+	startZoom() {
+		this.savedSize = {
+			width: this.width,
+			height: this.height
+		}
+	}
+
+	doZoom(scale) {
+		if (this.savedSize) {
+			this.width = this.savedSize.width * scale;
+			this.height = this.savedSize.height * scale;
+		}
+	}
+
+	endZoom() {
+		this.done();
+	}
+
+
 
 
 }

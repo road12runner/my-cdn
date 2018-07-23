@@ -12,10 +12,10 @@ class Canvas {
 		this.ctx = this.canvas.getContext('2d');
 
 		if (options.width) {
-			this.canvas.setAttribute('width', `${options.width}px`);
+			this.canvas.setAttribute('width', `${options.width}`);
 		}
 		if (options.height) {
-			this.canvas.setAttribute('height', `${options.height}px`);
+			this.canvas.setAttribute('height', `${options.height}`);
 		}
 
 		const canvasCenter = {
@@ -94,6 +94,8 @@ class Canvas {
 		
 		let currentRotation = 0, lastRotation, startRotation;
 		mc.on('rotatestart', e => {
+			this.card.startRotate();
+
 			lastRotation = currentRotation;
 			startRotation = Math.round(e.rotation);
 			//document.querySelector('#log').innerHTML +=  " rotation start: "  +  startRotation;
@@ -101,25 +103,30 @@ class Canvas {
 		
 		mc.on('rotateend', e=> {
 			lastRotation = currentRotation;
+			this.card.endRotate();
 			//document.querySelector('#log').innerHTML +=  " rotation end: "  +  lastRotation;
 		});
 		
 		mc.on('rotatemove', e =>{
+			this.card.doRotate(e.rotation);
+
 			const diff = Math.round(e.rotation) - startRotation;
 			currentRotation = lastRotation - diff;
 			
-			this.card.rotate(diff);
+			//this.card.rotate(diff);
 		});
 		
 		
 		
 		let currentScale;
 		mc.on('pinchstart', e => {
+			this.card.startZoom();
 			currentScale = e.scale;
 			//document.querySelector('#log').innerHTML +=  " pinch start: "  +  startScale;
 		});
 
 		mc.on('pinchend', e=> {
+			this.card.endZoom();
 			//lastScale = currentScale;
 			//document.querySelector('#log').innerHTML +=  " pinch end: "  +  lastScale;
 		});
@@ -127,16 +134,43 @@ class Canvas {
 		mc.on('pinchmove', e =>{
 			const diff = e.scale - currentScale;
 			//document.querySelector('#log').innerHTML +=  " pinch: "  +  diff;
-			this.card.scale( 1+ diff / 4); // put coefficient for scaling
+			//this.card.scale( 1+ diff / 4); // put coefficient for scaling
+			this.card.doZoom(e.scale);
 			currentScale = e.scale;
 		});
 
-		
-		mc.on('pan', e => {
-			this.card.move({
-				x: e.deltaX / 10,
-				y: e.deltaY /10
+
+		let currentPos = null;
+		mc.on('panstart', e => {
+
+			// currentPos = {
+			// 	x: e.deltaX,
+			// 	y: e.deltaY
+			// };
+			this.card.startMove();
+		});
+		mc.on('panmove', e => {
+
+			this.card.doMove({
+				x: e.deltaX,
+				y: e.deltaY
 			});
+			// if (currentPos) {
+			// 	const delta = {
+			// 		x: currentPos.x + e.deltaX,
+			// 		y: currentPos.y + e.deltaY
+			// 	};
+			// 	console.log(currentPos, delta, e);
+			// 	this.card.move(delta);
+			// 	//currentPos = delta;
+			// }
+			// this.card.move({
+			// 	x: e.deltaX / 10,
+			// 	y: e.deltaY /10
+			// });
+		});
+		mc.on('panend', e => {
+			this.card.endMove();
 		});
 
 		window.requestAnimationFrame(() => this.drawCard());
@@ -149,6 +183,13 @@ class Canvas {
 		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		this.card.render(this.ctx);
 
+		if (this.mousePos) {
+			this.ctx.beginPath();
+			this.ctx.arc(this.mousePos.x , this.mousePos.y , 5, 0, 2 * Math.PI);
+			this.ctx.fillStyle = 'black';
+			this.ctx.fill();
+			this.ctx.stroke();
+		}
 
 		window.requestAnimationFrame(() => this.drawCard());
 
@@ -160,6 +201,7 @@ class Canvas {
 
 
 		const pos = getEventPosition(event);
+		this.mousePos = pos;
 		this.card.selected = true;
 		this.card.click(pos)
 
@@ -168,6 +210,7 @@ class Canvas {
 
 	keepEvent(e) {
 		const pos = getEventPosition(e);
+		this.mousePos = pos;
 		this.card.hover(pos);
 	}
 
