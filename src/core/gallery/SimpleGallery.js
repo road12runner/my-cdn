@@ -61,9 +61,8 @@ class SimpleGallery {
 			}
 
 			button.addEventListener('keydown', e => {
-				console.log(e.key);
-				if (e && (e.key === 13 || e.key === 32)) {
-					// trigger by enter
+					if (e && (e.key === 'Enter' || e.key === ' ')) {
+					// trigger by enter or space
 					this.onImageSelected(e.target.id);
 				}
 			});
