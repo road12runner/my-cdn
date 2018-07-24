@@ -46,7 +46,10 @@ class Canvas {
 		this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
 
 		
-		
+
+		// dragg drop events
+		this.canvas.addEventListener('dragover', e => this.dragOver(e));
+		this.canvas.addEventListener('drop', e => this.drop(e));
 		
 
 		const mc = new Hammer.Manager(this.canvas);
@@ -196,7 +199,7 @@ class Canvas {
 	}
 
 	startEvent(e) {
-
+		console.log('mousedown');
 		//TODO find selected item on card if any
 
 
@@ -209,13 +212,14 @@ class Canvas {
 
 
 	keepEvent(e) {
+		console.log('mousemove');
 		const pos = getEventPosition(e);
 		this.mousePos = pos;
 		this.card.hover(pos);
 	}
 
 	finishEvent (e) {
-
+		console.log('mouseup');
 		this.card.done();
 	}
 
@@ -224,10 +228,18 @@ class Canvas {
 	}
 
 
+	dragOver(e) {
+		e.preventDefault();
+	}
 
-
+	drop(e) {
+		e.preventDefault();
+		const data = e.dataTransfer.getData("text");
+		console.log('image id', data);
+	}
 
 }
+
 
 
 export default Canvas;

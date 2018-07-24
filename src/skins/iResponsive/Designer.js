@@ -2,6 +2,8 @@ import template from './templates/designer.tmpl';
 
 import Canvas from '../../core/canvas/Canvas';
 import GalleryManager from '../../core/gallery/GaleryManager';
+import SimpleGallery from '../../core/gallery/SimpleGallery';
+
 import AppSettings from '../../core/AppSettings';
 
 import {GALLERY_LOADED} from '../../core/eventTypes';
@@ -17,14 +19,15 @@ class Designer {
 		document.addEventListener(GALLERY_LOADED, () => {
 			console.log('drawing canvas');
 
-			const galleryManager = new GalleryManager();
+			this.galleryManager = new GalleryManager();
 
 
 			this.canvas = new Canvas(this.designerSettins, '#ssg-canvas');
-			this.canvas.setImage(galleryManager.galleries[0].images[0].LargeImage);
+			this.canvas.setImage(this.galleryManager.galleries[0].images[0].LargeImage);
 
-			console.log(galleryManager);
 			console.log(AppSettings);
+
+			this.showClipArts();
 		});
 
 	}
@@ -32,7 +35,29 @@ class Designer {
 	show() {
 		this.parentElement.innerHTML = this.renderedTemplate;
 		this.el = this.parentElement.querySelector('.designer');
+
 	}
+
+
+	showClipArts() {
+		const clipartContainer = this.el.querySelector('.cliparts');
+		let cliparts = [];
+		this.galleryManager.getClipArts().forEach( item => {
+			cliparts = cliparts.concat(item.images);
+		});
+
+
+		const gallery = new SimpleGallery(clipartContainer, {
+			images: cliparts,
+			showImageAsChild: true,
+			dragable: true
+		});
+
+
+
+		console.log(clipartContainer, cliparts);
+	}
+
 }
 
 export  default Designer;

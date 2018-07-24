@@ -66,6 +66,12 @@ class  GalleryManager {
 	}
 
 
+	getClipArts() {
+		console.log(this.galleries);
+		return this.galleries.filter( el => el.ImageType === CLIPART_IMAGE_TYPE);
+	};
+
+
 	// let imageCategories = [];
 	// let selectedCategoryId = null;
 	//
