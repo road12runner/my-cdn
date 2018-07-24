@@ -299,13 +299,14 @@ class Card  extends  CanvasObject{
 	}
 
 
-	startRotate() {
-		this.savedRotation = this.rotation;
+	startRotate(angle) {
+		this.savedRotation = angle;
 	}
 
 	doRotate(angle) {
-		if (this.savedRotation) {
-			this.rotation = this.savedRotation + angle;
+		if (this.savedRotation !== null ) {
+			this.rotation -= (this.savedRotation - angle);
+			this.savedRotation = angle;
 		}
 	}
 
@@ -336,3 +337,6 @@ class Card  extends  CanvasObject{
 }
 
 export default Card;
+
+
+//todo remove points for touch modec

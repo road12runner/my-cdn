@@ -94,7 +94,7 @@ class Canvas {
 		
 		let currentRotation = 0, lastRotation, startRotation;
 		mc.on('rotatestart', e => {
-			this.card.startRotate();
+			this.card.startRotate(e.rotation);
 
 			lastRotation = currentRotation;
 			startRotation = Math.round(e.rotation);
