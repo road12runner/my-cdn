@@ -41,7 +41,7 @@ export function isInside (pos, area) {
 
 export function getEventPosition (event) {
 
-	const rect = event.currentTarget.getBoundingClientRect();
+	const rect = event.currentTarget.getBoundingClientRect() ;
 
 	const eventX = event.touches ? event.touches[0].clientX : event.clientX;
 	const eventY = event.touches ? event.touches[0].clientY : event.clientY;

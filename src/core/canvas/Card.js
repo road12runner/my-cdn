@@ -177,16 +177,33 @@ class Card  extends  CanvasObject{
 		const innerPoints = getCoordinates(this.template);
 		const outerPoints = getCoordinates(this);
 
-		const result = innerPoints.leftTop.x >= outerPoints.leftTop.x
-			&& innerPoints.leftTop.x <= outerPoints.rightTop.x
-			&& innerPoints.rightTop.x >= outerPoints.leftTop.x
-			&& innerPoints.rightTop.x <= outerPoints.rightTop.x
-			&& innerPoints.leftTop.y >= outerPoints.leftTop.y
-			&& innerPoints.leftTop.y <= outerPoints.leftBottom.y
-			&& innerPoints.leftBottom.y >= outerPoints.leftTop.y
-			&& innerPoints.leftBottom.y <= outerPoints.leftBottom.y;
-
+		// const result = innerPoints.leftTop.x >= outerPoints.leftTop.x
+		// 	&& innerPoints.leftTop.x <= outerPoints.rightTop.x
+		// 	&& innerPoints.rightTop.x >= outerPoints.leftTop.x
+		// 	&& innerPoints.rightTop.x <= outerPoints.rightTop.x
+		// 	&& innerPoints.leftTop.y >= outerPoints.leftTop.y
+		// 	&& innerPoints.leftTop.y <= outerPoints.leftBottom.y
+		// 	&& innerPoints.leftBottom.y >= outerPoints.leftTop.y
+		// 	&& innerPoints.leftBottom.y <= outerPoints.leftBottom.y;
+		
+		
+		const result1 = Math.floor(innerPoints.leftTop.x) >= Math.floor(outerPoints.leftTop.x);
+		const result2 = Math.floor(innerPoints.leftTop.x) <= Math.floor(outerPoints.rightTop.x);
+		const result3 = Math.floor(innerPoints.rightTop.x) >= Math.floor(outerPoints.leftTop.x);
+		const result4 = Math.floor(innerPoints.rightTop.x) <= Math.floor(outerPoints.rightTop.x);
+		const result5 = Math.floor(innerPoints.leftTop.y) >= Math.floor(outerPoints.leftTop.y);
+		const result6 = Math.floor(innerPoints.leftTop.y) <= Math.floor(outerPoints.leftBottom.y);
+		const result7 = Math.floor(innerPoints.leftBottom.y) >= Math.floor(outerPoints.leftTop.y);
+		const result8 = Math.floor(innerPoints.leftBottom.y) <= Math.floor(outerPoints.leftBottom.y);
+		
+		const result = result1 && result2 && result3 && result4 && result4 && result5 && result6 && result7 && result8;
+		if (!result){
+			debugger;
+		}
+		
 		return result;
+		
+		
 	}
 
 

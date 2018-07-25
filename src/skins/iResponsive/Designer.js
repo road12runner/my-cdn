@@ -28,7 +28,8 @@ class Designer {
 
 			this.canvas = new Canvas(this.designerSettins, '#ssg-canvas', {
 				image: this.galleryManager.galleries[0].images[0].LargeImage,
-				onCardCoverage: e => this.handleTestCoverage(e)
+				onCardCoverage: e => this.handleTestCoverage(e),
+				touchDevice: AppSettings.isTouchDevice()
 			});
 
 			console.log(AppSettings);
@@ -78,9 +79,10 @@ class Designer {
 		console.log('clipart', id, image);
 		this.canvas.addImageItem(id, image.LargeImage);
 	}
-
-
-
+	
+	
+	
+	
 }
 
 export  default Designer;

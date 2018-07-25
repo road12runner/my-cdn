@@ -80,23 +80,55 @@ class Canvas {
 		const pinch = new Hammer.Pinch();
 		const rotate = new Hammer.Rotate();
 		const pan = new Hammer.Pan();
-
+		
+		const tap= new Hammer.Tap({ event: 'singletap' });
+		
 		// we want to detect both the same time
 		pinch.recognizeWith(rotate);
 
 		// add to the Manager
-		mc.add([pinch, rotate, pan]);
+		mc.add([pinch, rotate, pan, tap]);
 
 
 		mc.on('rotatestart', e => this.getSelectedObject().startRotate(e.rotation));
 		mc.on('rotateend', e => this.getSelectedObject().endRotate());
-		mc.on('rotatemove', e => this.getSelectedObject().doRotate(e.rotation));
+		mc.on('rotatemove', e => {
+			const obj = this.getSelectedObject();
+			obj.doRotate(e.rotation);
+			this.testCoverage(obj);
+		});
 		mc.on('pinchstart', e => this.getSelectedObject().startZoom());
 		mc.on('pinchend', e=> this.getSelectedObject().endZoom());
-		mc.on('pinchmove', e =>this.getSelectedObject().doZoom(e.scale));
-		mc.on('panstart', e => this.getSelectedObject().startMove());
-		mc.on('panmove', e => this.getSelectedObject().doMove({x: e.deltaX, y: e.deltaY}));
+		mc.on('pinchmove', e =>{
+			const obj = this.getSelectedObject();
+			obj.doZoom(e.scale);
+			this.testCoverage(obj);
+		});
+		mc.on('panstart', e => {
+			this.getSelectedObject().startMove()
+		});
+		mc.on('panmove', e => {
+			const obj = this.getSelectedObject();
+			obj.doMove({x: e.deltaX, y: e.deltaY});
+			this.testCoverage(obj);
+			
+		});
 		mc.on('panend', e => this.getSelectedObject().endMove());
+		mc.on('singletap', e => {
+			
+			function getPos(e) {
+				const rect = e.target.getBoundingClientRect();
+				const eventPos = e.center;
+				
+				return {
+					x: eventPos.x - rect.left,
+					y: eventPos.y - rect.top
+				};
+			}
+			
+			const pos = getPos(e);
+			this.findSelectedObject(pos);
+		});
 
 
 
@@ -129,13 +161,18 @@ class Canvas {
 
 	startEvent(e) {
 		const pos = getEventPosition(event);
+		this.findSelectedObject(pos).click(pos);
+		
+	}
+
+	findSelectedObject(pos) {
 		// check if events happens in already selected item
 		let selectedObject = null;
 		let selectedItems = this.items.filter( item => item.selected === true && item.hitTest(pos));
 		if (selectedItems.length === 1) {
 			selectedObject = selectedItems[0];
 		} else {
-
+			
 			for (const item of this.items) {
 				if ( !selectedObject && item.hitTest(pos)) {
 					item.selected = true;
@@ -145,24 +182,24 @@ class Canvas {
 				}
 			}
 		}
-
+		
 		if (selectedObject) {
 			// found an item - remove selection from card and delegate click event to selected item
 			this.card.selected = false;
-			selectedObject.click(pos);
-
+			return selectedObject;
+			
 		} else {
-
+			
 			// select card and pass the click event
 			this.card.selected = true;
-			this.card.click(pos);
-
+			return this.card;
+			
 		}
-
-
+		
 	}
-
-
+	
+	
+	
 
 	getSelectedObject() {
 		return this.card.selected ? this.card : this.items.find( item => item.selected === true);
@@ -173,11 +210,17 @@ class Canvas {
 
 		const selectedObj = this.getSelectedObject();
 		selectedObj.hover(pos);
-		const result = selectedObj.testCoverage();
+		this.testCoverage(selectedObj);
+	}
+	
+	
+	testCoverage(obj) {
+		const result = obj.testCoverage();
 		if (result !== this.testCardCoverageResult) {
 			this.handleCardCoverage(result);
 			this.testCardCoverageResult = result;
 		}
+		
 	}
 
 	finishEvent (e) {
