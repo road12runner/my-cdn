@@ -67,9 +67,22 @@ class  GalleryManager {
 
 
 	getClipArts() {
-		console.log(this.galleries);
 		return this.galleries.filter( el => el.ImageType === CLIPART_IMAGE_TYPE);
 	};
+
+	getImageById(id) {
+		let image = null;
+		for (const gallery of this.galleries) {
+			image = gallery.images.find( img => {
+				return img.Id === id
+			});
+			if (image) {
+				break;
+			}
+		}
+
+		return image;
+	}
 
 
 	// let imageCategories = [];

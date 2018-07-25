@@ -1,4 +1,6 @@
 import Card from './Card';
+import CardItem  from './CardItem';
+
 import {getEventPosition} from './canvas-helper'
 import  Hammer from 'hammerjs';
 
@@ -6,7 +8,8 @@ class Canvas {
 
 	constructor (designerSettings, canvasElement, options = {}) {
 
-		console.log('hammer', Hammer);
+
+		this.designerSettings = designerSettings;
 
 		this.canvas = document.querySelector(canvasElement);
 		this.ctx = this.canvas.getContext('2d');
@@ -18,13 +21,16 @@ class Canvas {
 			this.canvas.setAttribute('height', `${options.height}`);
 		}
 
+
+		this.handleCardCoverage = options.onCardCoverage || function() {};
+
 		const canvasCenter = {
 			x: this.ctx.canvas.width / 2,
 			y: this.ctx.canvas.height / 2,
 		};
 
 
-		const templateSize = {
+		this.templateSize = {
 			x: designerSettings.Desktop.Top,
 			y: designerSettings.Desktop.Left,
 			width: designerSettings.Desktop.Right - designerSettings.Desktop.Left,
@@ -34,24 +40,40 @@ class Canvas {
 
 		this.card = new Card({
 			canvasCenter,
-			templateSize,
+			templateSize : this.templateSize,
 			templateUrl: designerSettings.DesignTemplate.UrlLarge
 		});
 
+		this.items = [];
 
+		if (options.touchDevice) {
+			this.setTouchEvents();
+		} else {
+			// mouse events
+			this.canvas.addEventListener('mousedown', e => this.startEvent(e));
+			this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
+			this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
 
-		// mouse events
-		this.canvas.addEventListener('mousedown', e => this.startEvent(e));
-		this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
-		this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
-
-		
+		}
 
 		// dragg drop events
 		this.canvas.addEventListener('dragover', e => this.dragOver(e));
 		this.canvas.addEventListener('drop', e => this.drop(e));
-		
 
+		if (options.image) {
+			this.setImage(options.image);
+		}
+
+
+
+		this.testCardCoverageResult = false;
+
+		window.requestAnimationFrame(() => this.drawCard());
+
+	}
+
+
+	setTouchEvents() {
 		const mc = new Hammer.Manager(this.canvas);
 		// create a pinch and rotate recognizer
 		// these require 2 pointers
@@ -65,166 +87,108 @@ class Canvas {
 		// add to the Manager
 		mc.add([pinch, rotate, pan]);
 
-		
-		// setTimeout( () => {
-		// 	//this.card.scale(1.5);
-		// }, 3000);
 
-		mc.on("pinch", ev => {
-			
-			
-			// if (ev.type === 'pinch') {
-			//
-			// 	//document.querySelector('#log').innerHTML += ev.scale +" ";
-			//
-			// 	// if (!ev || !ev.scale) {
-			// 	// 	debugger;
-			// 	// }
-			//
-			// 	this.card.scale(ev.scale);
-			// }
-			// document.querySelector('#log').innerHTML += ev.scale +" ";
-			// this.card.scale(e.scale);
-//			document.querySelector('#log').innerHTML += ev.type +" ";
-			// if (ev.type === 'pinch') {
-			// 	document.querySelector('#log').innerHTML += ev.scale +" ";
-			// } else if (ev.type === 'rotate') {
-			// 	document.querySelector('#log').innerHTML += ev.rotation +" ";
-			// }
-
-			//myElement.textContent += ev.type +" ";
-		});
-		
-		let currentRotation = 0, lastRotation, startRotation;
-		mc.on('rotatestart', e => {
-			this.card.startRotate(e.rotation);
-
-			lastRotation = currentRotation;
-			startRotation = Math.round(e.rotation);
-			//document.querySelector('#log').innerHTML +=  " rotation start: "  +  startRotation;
-		});
-		
-		mc.on('rotateend', e=> {
-			lastRotation = currentRotation;
-			this.card.endRotate();
-			//document.querySelector('#log').innerHTML +=  " rotation end: "  +  lastRotation;
-		});
-		
-		mc.on('rotatemove', e =>{
-			this.card.doRotate(e.rotation);
-
-			const diff = Math.round(e.rotation) - startRotation;
-			currentRotation = lastRotation - diff;
-			
-			//this.card.rotate(diff);
-		});
-		
-		
-		
-		let currentScale;
-		mc.on('pinchstart', e => {
-			this.card.startZoom();
-			currentScale = e.scale;
-			//document.querySelector('#log').innerHTML +=  " pinch start: "  +  startScale;
-		});
-
-		mc.on('pinchend', e=> {
-			this.card.endZoom();
-			//lastScale = currentScale;
-			//document.querySelector('#log').innerHTML +=  " pinch end: "  +  lastScale;
-		});
-
-		mc.on('pinchmove', e =>{
-			const diff = e.scale - currentScale;
-			//document.querySelector('#log').innerHTML +=  " pinch: "  +  diff;
-			//this.card.scale( 1+ diff / 4); // put coefficient for scaling
-			this.card.doZoom(e.scale);
-			currentScale = e.scale;
-		});
+		mc.on('rotatestart', e => this.getSelectedObject().startRotate(e.rotation));
+		mc.on('rotateend', e => this.getSelectedObject().endRotate());
+		mc.on('rotatemove', e => this.getSelectedObject().doRotate(e.rotation));
+		mc.on('pinchstart', e => this.getSelectedObject().startZoom());
+		mc.on('pinchend', e=> this.getSelectedObject().endZoom());
+		mc.on('pinchmove', e =>this.getSelectedObject().doZoom(e.scale));
+		mc.on('panstart', e => this.getSelectedObject().startMove());
+		mc.on('panmove', e => this.getSelectedObject().doMove({x: e.deltaX, y: e.deltaY}));
+		mc.on('panend', e => this.getSelectedObject().endMove());
 
 
-		let currentPos = null;
-		mc.on('panstart', e => {
 
-			// currentPos = {
-			// 	x: e.deltaX,
-			// 	y: e.deltaY
-			// };
-			this.card.startMove();
-		});
-		mc.on('panmove', e => {
+		//let currentScale;
+		// mc.on('pinchstart', e => {
+		// 	this.getSelectedObject().startZoom();
+		// 	currentScale = e.scale;
+		// });
+		//
+		// mc.on('pinchend', e=> this.getSelectedObject().endZoom());
+		//
+		// mc.on('pinchmove', e =>{
+		// 	//const diff = e.scale - currentScale;
+		// 	this.card.doZoom(e.scale);
+		// 	//currentScale = e.scale;
+		// });
 
-			this.card.doMove({
-				x: e.deltaX,
-				y: e.deltaY
-			});
-			// if (currentPos) {
-			// 	const delta = {
-			// 		x: currentPos.x + e.deltaX,
-			// 		y: currentPos.y + e.deltaY
-			// 	};
-			// 	console.log(currentPos, delta, e);
-			// 	this.card.move(delta);
-			// 	//currentPos = delta;
-			// }
-			// this.card.move({
-			// 	x: e.deltaX / 10,
-			// 	y: e.deltaY /10
-			// });
-		});
-		mc.on('panend', e => {
-			this.card.endMove();
-		});
-
-		window.requestAnimationFrame(() => this.drawCard());
 
 	}
-
 
 	drawCard() {
 
 		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		this.card.render(this.ctx);
-
-		if (this.mousePos) {
-			this.ctx.beginPath();
-			this.ctx.arc(this.mousePos.x , this.mousePos.y , 5, 0, 2 * Math.PI);
-			this.ctx.fillStyle = 'black';
-			this.ctx.fill();
-			this.ctx.stroke();
-		}
+		this.items.forEach( item => item.render(this.ctx));
 
 		window.requestAnimationFrame(() => this.drawCard());
 
 	}
 
 	startEvent(e) {
-		console.log('mousedown');
-		//TODO find selected item on card if any
-
-
 		const pos = getEventPosition(event);
-		this.mousePos = pos;
-		this.card.selected = true;
-		this.card.click(pos)
+		// check if events happens in already selected item
+		let selectedObject = null;
+		let selectedItems = this.items.filter( item => item.selected === true && item.hitTest(pos));
+		if (selectedItems.length === 1) {
+			selectedObject = selectedItems[0];
+		} else {
+
+			for (const item of this.items) {
+				if ( !selectedObject && item.hitTest(pos)) {
+					item.selected = true;
+					selectedObject = item;
+				} else {
+					item.selected = false;
+				}
+			}
+		}
+
+		if (selectedObject) {
+			// found an item - remove selection from card and delegate click event to selected item
+			this.card.selected = false;
+			selectedObject.click(pos);
+
+		} else {
+
+			// select card and pass the click event
+			this.card.selected = true;
+			this.card.click(pos);
+
+		}
+
 
 	}
 
 
+
+	getSelectedObject() {
+		return this.card.selected ? this.card : this.items.find( item => item.selected === true);
+	}
+
 	keepEvent(e) {
-		console.log('mousemove');
 		const pos = getEventPosition(e);
-		this.mousePos = pos;
-		this.card.hover(pos);
+
+		const selectedObj = this.getSelectedObject();
+		selectedObj.hover(pos);
+		const result = selectedObj.testCoverage();
+		if (result !== this.testCardCoverageResult) {
+			this.handleCardCoverage(result);
+			this.testCardCoverageResult = result;
+		}
 	}
 
 	finishEvent (e) {
 		console.log('mouseup');
-		this.card.done();
+		const selectedObj = this.getSelectedObject();
+		selectedObj.done();
 	}
 
 	setImage(imageUrl) {
 		this.card.setImage(imageUrl);
+
 	}
 
 
@@ -234,9 +198,57 @@ class Canvas {
 
 	drop(e) {
 		e.preventDefault();
-		const data = e.dataTransfer.getData("text");
-		console.log('image id', data);
+		const imageId = +e.dataTransfer.getData("image-id");
+		const imageUrl  = e.dataTransfer.getData("image-url");
+		if (imageId) {
+			console.log('image id', imageId, imageUrl, getEventPosition(e));
+			const  cardItem =  this.addImageItem(imageId, imageUrl);
+			cardItem.originPoint = getEventPosition(e);
+
+
+		}
 	}
+
+	addImageItem(id, url) {
+
+
+		const itemArea = this.designerSettings.Coverage.Logo;
+
+
+		// remove previously selected object
+		this.card.selected = false;
+		this.items.forEach( item => item.selected = false );
+
+		const canvasCenter = {
+			x: this.ctx.canvas.width / 2,
+			y: this.ctx.canvas.height / 2,
+		};
+
+
+
+		const coverageArea = {
+			x: canvasCenter.x - this.templateSize.width /2 + itemArea.Left,
+			y: canvasCenter.y - this.templateSize.height /2 + itemArea.Top,
+			width:  itemArea.Right  - itemArea.Left,
+			height: itemArea.Bottom - itemArea.Top
+		};
+
+		const cardItem = new CardItem(id, url, {
+			coverageArea,
+			onOutOfArea: () => this.handleOutOfArea()
+		});
+		this.items.push(cardItem);
+
+		return cardItem;
+
+	}
+
+
+	// itemOutOfArea() {
+	// 	this.ctx.font = '12px Arial';
+	// 	this.ctx.fillStyle = '#000';
+	// 	this.ctx.fillText('Overlap', 10, 10);
+	// }
 
 }
 

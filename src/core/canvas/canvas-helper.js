@@ -52,3 +52,31 @@ export function getEventPosition (event) {
 	};
 }
 
+
+export function allInside (vertices, coverage) {
+
+	const box = {
+		top: coverage.y,
+		bottom: coverage.y + coverage.height,
+		left: coverage.x,
+		right: coverage.x + coverage.width
+	};
+
+	return vertices[0].y > box.top
+		&& vertices[1].y > box.top
+		&& vertices[2].y > box.top
+		&& vertices[3].y > box.top
+		&& vertices[0].x > box.left
+		&& vertices[1].x > box.left
+		&& vertices[2].x > box.left
+		&& vertices[3].x > box.left
+		&& vertices[0].x < box.right
+		&& vertices[1].x < box.right
+		&& vertices[2].x < box.right
+		&& vertices[3].x < box.right
+		&& vertices[0].y < box.bottom
+		&& vertices[1].y < box.bottom
+		&& vertices[2].y < box.bottom
+		&& vertices[3].y < box.bottom;
+}
+

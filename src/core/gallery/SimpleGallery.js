@@ -78,7 +78,8 @@ class SimpleGallery {
 		if (this.dragable) {
 			img.setAttribute('dragable', true);
 			img.addEventListener('dragstart', e => {
-				e.dataTransfer.setData("text", e.target.parentElement.id)
+				e.dataTransfer.setData("image-id", e.target.parentElement.id);
+				e.dataTransfer.setData("image-url", e.target.src);
 			});
 		}
 

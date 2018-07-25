@@ -15,15 +15,21 @@ class Designer {
 
 		this.renderedTemplate = template;
 
+		this.parentElement.innerHTML = this.renderedTemplate;
+		this.el = this.parentElement.querySelector('.designer');
+
 		// waiting until galleries as loaded
+		//TODO redo with  event listener
 		document.addEventListener(GALLERY_LOADED, () => {
 			console.log('drawing canvas');
 
 			this.galleryManager = new GalleryManager();
 
 
-			this.canvas = new Canvas(this.designerSettins, '#ssg-canvas');
-			this.canvas.setImage(this.galleryManager.galleries[0].images[0].LargeImage);
+			this.canvas = new Canvas(this.designerSettins, '#ssg-canvas', {
+				image: this.galleryManager.galleries[0].images[0].LargeImage,
+				onCardCoverage: e => this.handleTestCoverage(e)
+			});
 
 			console.log(AppSettings);
 
@@ -32,9 +38,15 @@ class Designer {
 
 	}
 
+
+	handleTestCoverage(result) {
+
+		const errorContainer = this.el.querySelector('#error-message');
+		errorContainer.innerHTML = result ? '': ' out of border ';
+
+	}
+
 	show() {
-		this.parentElement.innerHTML = this.renderedTemplate;
-		this.el = this.parentElement.querySelector('.designer');
 
 	}
 
@@ -50,13 +62,24 @@ class Designer {
 		const gallery = new SimpleGallery(clipartContainer, {
 			images: cliparts,
 			showImageAsChild: true,
-			dragable: true
+			dragable: true,
+			onImageSelected:  id => this.clipartSelected(id)
 		});
 
 
 
 		console.log(clipartContainer, cliparts);
 	}
+
+
+	clipartSelected(id) {
+
+		const image = this.galleryManager.getImageById(+id);
+		console.log('clipart', id, image);
+		this.canvas.addImageItem(id, image.LargeImage);
+	}
+
+
 
 }
 
