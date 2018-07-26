@@ -8,15 +8,17 @@ class CardItem  extends CanvasObject{
 		super();
 
 		this.coverageArea = options.coverageArea;
-		console.log(this.coverageArea);
+		this.templateArea = options.templateArea;
+
+		console.log('templateArea', this.templateArea);
 
 		this.width = options.width || 50;
-		this.height = options.height = 40;
+		this.height = options.height = 50;
 		this.rotation = 0;
 
 		const bleeding = options.bleeding || 5;
 
-		this.originPoint = {
+		this.originPoint = options.initialPosition || {
 			x: this.coverageArea.x + this.width /2 + bleeding,
 			y: this.coverageArea.y + this.height /2 + bleeding,
 		} ;
@@ -25,6 +27,10 @@ class CardItem  extends CanvasObject{
 		this.setImage(url);
 
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
+
+		this.removed = false;
+
+		this.testCoverage();
 	}
 
 	setImage (url) {
@@ -98,7 +104,21 @@ class CardItem  extends CanvasObject{
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
 		ctx.restore();
 
-		// show item itself
+
+
+		if (this.removed) {
+			ctx.save();
+			ctx.translate(this.originPoint.x, this.originPoint.y);
+			ctx.beginPath();
+			ctx.fillStyle = 'rgba(255,0,0, .9)';
+			ctx.arc(0 , 0 , this.width / 3.2, 0, 2 * Math.PI);
+			ctx.fill();
+			ctx.fillStyle = '#fff';
+			ctx.strokeStyle = '#fff';
+			roundRect(ctx, -this.width /4, -this.height /20,  this.width /2,  this.height /10, 1, '#ffffff', );
+			ctx.restore();
+		}
+
 	}
 
 
@@ -121,8 +141,15 @@ class CardItem  extends CanvasObject{
 			this.getRightTopCorner(),
 			this.getLeftTopCorner(),
 			this.getRightBottomCorner()];
+		this.errorCoverage =  !allInside(vertices, this.coverageArea);
 
-		return allInside(vertices, this.coverageArea);
+
+		this.removed = this.originPoint.x + this.width /2 < this.templateArea.x - 5
+			|| this.originPoint.x - this.width /2 > this.templateArea.x + this.templateArea.width +5
+			|| this.originPoint.y + this.height /2 < this.templateArea.y -5
+			|| this.originPoint.y - this.height /2 > this.templateArea.y + this.templateArea.height +5;
+
+		return this.errorCoverage;
 	}
 
 

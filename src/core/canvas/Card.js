@@ -1,21 +1,14 @@
 import CanvasObject from './CanvasObject';
-import { roundRect, isInside } from './canvas-helper';
-import {CANVAS_ACTIONS} from './canvasActionTypes';
-class Card  extends  CanvasObject{
+import { roundRect, isInside, allInside, doPolygonsIntersect } from './canvas-helper';
+import { CANVAS_ACTIONS } from './canvasActionTypes';
+
+class Card extends CanvasObject {
 	constructor (options = {}) {
 		super();
 
-		this.template = options.templateSize || {x: 0, y: 0, height: 153, width: 241};
-		if (options.scale) {
-			const ratio = this.template.width / this.template.height;
-			this.template.width *= options.scale;
-			this.template.height *= ratio;
-		}
-
+		this.template = options.templateArea;
 		this.originPoint = options.canvasCenter;
 		this.imageOpacity = options.imageOpacity || 0.4;
-		this.template.x = this.originPoint.x - this.template.width / 2;
-		this.template.y = this.originPoint.y - this.template.height / 2;
 		this.action = CANVAS_ACTIONS.NOTHING;
 
 		this.width = this.template.width + 40;
@@ -27,20 +20,15 @@ class Card  extends  CanvasObject{
 		templateImage.onload = () => {
 			this.template.loaded = true;
 			this.template.image = templateImage;
-
 			console.log(this.template);
 
 		};
-
-
 
 		this.locked = false;
 		this.selected = true;
 		this.imageLoaded = false;
 		this.rotation = 0;
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
-
-
 
 	}
 
@@ -68,7 +56,6 @@ class Card  extends  CanvasObject{
 		ctx.globalAlpha = this.imageOpacity;
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
 		ctx.globalAlpha = 1;
-
 
 		if (this.selected && !this.locked) {
 			// draw border
@@ -103,16 +90,12 @@ class Card  extends  CanvasObject{
 			ctx.fill();
 			ctx.stroke();
 
-
-
 		}
-
 
 		ctx.restore();
 		ctx.save();
 
 		ctx.beginPath();
-
 
 		roundRect(ctx, this.template.x, this.template.y, this.template.width, this.template.height);
 		ctx.clip();
@@ -129,90 +112,200 @@ class Card  extends  CanvasObject{
 
 		ctx.drawImage(this.template.image, this.template.x, this.template.y, this.template.width, this.template.height);
 
-		if (this.mousePos) {
-			ctx.beginPath();
-			ctx.arc(this.mousePos.x, this.mousePos.y, 5, 0, 2 * Math.PI);
-			ctx.fillStyle = 'red';
-			ctx.fill();
-			ctx.stroke();
-		}
 
-		if (this.originPoint) {
+
+		const vertices = [this.getLeftTopCorner(), this.getRightTopCorner(), this.getRightBottomCorner(), this.getLeftBottomCorner()];
+
+
+		var imageLinesDraw = this.verticesToLines(vertices);
+
+		const bleedBox = {
+			top: this.template.y,
+			left: this.template.x,
+			right: this.template.x + this.template.width,
+			bottom: this.template.y + this.template.height
+		};
+
+		var templateLinesDraw = this.verticesToLines([
+			{x: Math.round(bleedBox.left), y: Math.round(bleedBox.bottom)},
+			{x: Math.round(bleedBox.left), y: Math.round(bleedBox.top)},
+			{x: Math.round(bleedBox.right), y: Math.round(bleedBox.top)},
+			{x: Math.round(bleedBox.right), y: Math.round(bleedBox.bottom)}
+		]);
+
+		imageLinesDraw.forEach( line => {
+			ctx.strokeStyle = 'yellow';
 			ctx.beginPath();
-			ctx.arc(this.originPoint.x, this.originPoint.y, 5, 0, 2 * Math.PI);
-			ctx.fillStyle = 'pink';
-			ctx.fill();
+			ctx.moveTo(line.p1.x, line.p1.y);
+			ctx.lineTo(line.p2.x, line.p2.y);
 			ctx.stroke();
-		}
+		});
+
+		templateLinesDraw.forEach( line => {
+			ctx.strokeStyle = 'pink';
+			ctx.beginPath();
+			ctx.moveTo(line.p1.x, line.p1.y);
+			ctx.lineTo(line.p2.x, line.p2.y);
+			ctx.stroke();
+		});
 
 
 	}
 
 
+	testCoverage () {
+
+		const bleedBox = {
+			top: this.template.y,
+			left: this.template.x,
+			right: this.template.x + this.template.width,
+			bottom: this.template.y + this.template.height
+		};
+
+		const vertices = [this.getLeftTopCorner(), this.getRightTopCorner(), this.getRightBottomCorner(), this.getLeftBottomCorner()];
 
 
+		const r1 = allInside();
+		const r2 = noOverlap();
+		const r3 = linesIntersect();
 
 
-	testCoverage() {
-		function getCoordinates (obj) {
-			if (obj.getLeftTopCorner) {
-				return {
-					leftTop: obj.getLeftTopCorner(),
-					rightTop: obj.getRightTopCorner(),
-					leftBottom: obj.getLeftBottomCorner(),
-					rightBottom: obj.getRightBottomCorner()
-				};
-			} else {
-				return {
-					leftTop: {x: obj.x, y: obj.y},
-					rightTop: {x: obj.x + obj.width, y: obj.y},
-					leftBottom: {x: obj.x, y: obj.y + obj.height},
-					rightBottom: {x: obj.x + obj.width, y: obj.y + obj.height},
-				};
+		this.errorCoverage = r1 || r2 || r3;
 
+		return this.errorCoverage;
+
+		function linesIntersect () {
+			var imageLines = verticesToLines(vertices);
+
+			var templateLines = verticesToLines([
+				{x: Math.round(bleedBox.left), y: Math.round(bleedBox.bottom)},
+				{x: Math.round(bleedBox.left), y: Math.round(bleedBox.top)},
+				{x: Math.round(bleedBox.right), y: Math.round(bleedBox.top)},
+				{x: Math.round(bleedBox.right), y: Math.round(bleedBox.bottom)}
+			]);
+
+			for (var i = 0; i < imageLines.length; i++) {
+				for (var j = 0; j < templateLines.length; j++) {
+					if (lineIntersect(imageLines[i].p1.x,
+						imageLines[i].p1.y,
+						imageLines[i].p2.x,
+						imageLines[i].p2.y,
+						templateLines[j].p1.x,
+						templateLines[j].p1.y,
+						templateLines[j].p2.x,
+						templateLines[j].p2.y
+						)
+					) {
+						return true;
+					}
+				}
 			}
+
+			return false;
+		}
+
+		function noOverlap () {
+			return (vertices[0].y < bleedBox.top
+				&& vertices[1].y < bleedBox.top
+				&& vertices[2].y < bleedBox.top
+				&& vertices[3].y < bleedBox.top)
+				||
+				(vertices[0].y > bleedBox.bottom
+					&& vertices[1].y > bleedBox.bottom
+					&& vertices[2].y > bleedBox.bottom
+					&& vertices[3].y > bleedBox.bottom)
+				||
+				(vertices[0].x < bleedBox.left
+					&& vertices[1].x < bleedBox.left
+					&& vertices[2].x < bleedBox.left
+					&& vertices[3].x < bleedBox.left)
+				||
+				(vertices[0].x > bleedBox.right
+					&& vertices[1].x > bleedBox.right
+					&& vertices[2].x > bleedBox.right
+					&& vertices[3].x > bleedBox.right);
+		}
+
+		function allInside () {
+			return vertices[0].y > bleedBox.top
+				&& vertices[1].y > bleedBox.top
+				&& vertices[2].y > bleedBox.top
+				&& vertices[3].y > bleedBox.top
+				&& vertices[0].x > bleedBox.left
+				&& vertices[1].x > bleedBox.left
+				&& vertices[2].x > bleedBox.left
+				&& vertices[3].x > bleedBox.left
+				&& vertices[0].x < bleedBox.right
+				&& vertices[1].x < bleedBox.right
+				&& vertices[2].x < bleedBox.right
+				&& vertices[3].x < bleedBox.right
+				&& vertices[0].y < bleedBox.bottom
+				&& vertices[1].y < bleedBox.bottom
+				&& vertices[2].y < bleedBox.bottom
+				&& vertices[3].y < bleedBox.bottom;
+		}
+
+		function verticesToLines (vertices) {
+			var lines = [];
+
+			for (var i = 0; i < vertices.length; i++) {
+				var next = i + 1;
+				if (next === vertices.length) { next = 0; }
+				lines.push({p1: vertices[i], p2: vertices[next]});
+			}
+
+			return lines;
 		}
 
 
-		const innerPoints = getCoordinates(this.template);
-		const outerPoints = getCoordinates(this);
-
-		// const result = innerPoints.leftTop.x >= outerPoints.leftTop.x
-		// 	&& innerPoints.leftTop.x <= outerPoints.rightTop.x
-		// 	&& innerPoints.rightTop.x >= outerPoints.leftTop.x
-		// 	&& innerPoints.rightTop.x <= outerPoints.rightTop.x
-		// 	&& innerPoints.leftTop.y >= outerPoints.leftTop.y
-		// 	&& innerPoints.leftTop.y <= outerPoints.leftBottom.y
-		// 	&& innerPoints.leftBottom.y >= outerPoints.leftTop.y
-		// 	&& innerPoints.leftBottom.y <= outerPoints.leftBottom.y;
-		
-		
-		const result1 = Math.floor(innerPoints.leftTop.x) >= Math.floor(outerPoints.leftTop.x);
-		const result2 = Math.floor(innerPoints.leftTop.x) <= Math.floor(outerPoints.rightTop.x);
-		const result3 = Math.floor(innerPoints.rightTop.x) >= Math.floor(outerPoints.leftTop.x);
-		const result4 = Math.floor(innerPoints.rightTop.x) <= Math.floor(outerPoints.rightTop.x);
-		const result5 = Math.floor(innerPoints.leftTop.y) >= Math.floor(outerPoints.leftTop.y);
-		const result6 = Math.floor(innerPoints.leftTop.y) <= Math.floor(outerPoints.leftBottom.y);
-		const result7 = Math.floor(innerPoints.leftBottom.y) >= Math.floor(outerPoints.leftTop.y);
-		const result8 = Math.floor(innerPoints.leftBottom.y) <= Math.floor(outerPoints.leftBottom.y);
-		
-		const result = result1 && result2 && result3 && result4 && result4 && result5 && result6 && result7 && result8;
-		if (!result){
-			debugger;
+		function lineIntersect(x1,y1,x2,y2, x3,y3,x4,y4) {
+			var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+			var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+			if (isNaN(x)||isNaN(y)) {
+				return false;
+			} else {
+				if (x1>=x2) {
+					if (!(x2<=x&&x<=x1)) {return false;}
+				} else {
+					if (!(x1<=x&&x<=x2)) {return false;}
+				}
+				if (y1>=y2) {
+					if (!(y2<=y&&y<=y1)) {return false;}
+				} else {
+					if (!(y1<=y&&y<=y2)) {return false;}
+				}
+				if (x3>=x4) {
+					if (!(x4<=x&&x<=x3)) {return false;}
+				} else {
+					if (!(x3<=x&&x<=x4)) {return false;}
+				}
+				if (y3>=y4) {
+					if (!(y4<=y&&y<=y3)) {return false;}
+				} else {
+					if (!(y3<=y&&y<=y4)) {return false;}
+				}
+			}
+			return true;
 		}
-		
-		return result;
-		
-		
+
 	}
 
 
 
+	verticesToLines (vertices) {
+		var lines = [];
 
+		for (var i = 0; i < vertices.length; i++) {
+			var next = i + 1;
+			if (next === vertices.length) { next = 0; }
+			lines.push({p1: vertices[i], p2: vertices[next]});
+		}
+
+		return lines;
+	}
 
 }
 
 export default Card;
-
 
 //todo remove points for touch mode

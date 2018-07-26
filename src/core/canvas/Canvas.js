@@ -28,19 +28,28 @@ class Canvas {
 			x: this.ctx.canvas.width / 2,
 			y: this.ctx.canvas.height / 2,
 		};
+		let width = (designerSettings.Desktop.Right - designerSettings.Desktop.Left) || 241;
+		let height = (designerSettings.Desktop.Bottom - designerSettings.Desktop.Top) || 153;
 
 
-		this.templateSize = {
-			x: designerSettings.Desktop.Top,
-			y: designerSettings.Desktop.Left,
-			width: designerSettings.Desktop.Right - designerSettings.Desktop.Left,
-			height: designerSettings.Desktop.Bottom - designerSettings.Desktop.Top
+		if (options.scale) {
+			const ratio = width / height;
+			width *= options.scale;
+			height *= ratio;
+		}
 
+
+
+		this.templateArea = {
+			x: canvasCenter.x - width /2,
+			y: canvasCenter.y - height /2,
+			width,
+			height
 		};
 
 		this.card = new Card({
 			canvasCenter,
-			templateSize : this.templateSize,
+			templateArea : this.templateArea,
 			templateUrl: designerSettings.DesignTemplate.UrlLarge
 		});
 
@@ -91,18 +100,24 @@ class Canvas {
 
 
 		mc.on('rotatestart', e => this.getSelectedObject().startRotate(e.rotation));
-		mc.on('rotateend', e => this.getSelectedObject().endRotate());
+		mc.on('rotateend', e => {
+			this.getSelectedObject().endRotate();
+			this.removeItems();
+		});
 		mc.on('rotatemove', e => {
 			const obj = this.getSelectedObject();
 			obj.doRotate(e.rotation);
-			this.testCoverage(obj);
+			this.testCoverage();
 		});
 		mc.on('pinchstart', e => this.getSelectedObject().startZoom());
-		mc.on('pinchend', e=> this.getSelectedObject().endZoom());
+		mc.on('pinchend', e => {
+			this.getSelectedObject().endZoom();
+			this.removeItems();
+		});
 		mc.on('pinchmove', e =>{
 			const obj = this.getSelectedObject();
 			obj.doZoom(e.scale);
-			this.testCoverage(obj);
+			this.testCoverage();
 		});
 		mc.on('panstart', e => {
 			this.getSelectedObject().startMove()
@@ -110,10 +125,13 @@ class Canvas {
 		mc.on('panmove', e => {
 			const obj = this.getSelectedObject();
 			obj.doMove({x: e.deltaX, y: e.deltaY});
-			this.testCoverage(obj);
+			this.testCoverage();
 			
 		});
-		mc.on('panend', e => this.getSelectedObject().endMove());
+		mc.on('panend', e => {
+			this.getSelectedObject().endMove()
+			this.removeItems();
+		});
 		mc.on('singletap', e => {
 			
 			function getPos(e) {
@@ -129,23 +147,6 @@ class Canvas {
 			const pos = getPos(e);
 			this.findSelectedObject(pos);
 		});
-
-
-
-		//let currentScale;
-		// mc.on('pinchstart', e => {
-		// 	this.getSelectedObject().startZoom();
-		// 	currentScale = e.scale;
-		// });
-		//
-		// mc.on('pinchend', e=> this.getSelectedObject().endZoom());
-		//
-		// mc.on('pinchmove', e =>{
-		// 	//const diff = e.scale - currentScale;
-		// 	this.card.doZoom(e.scale);
-		// 	//currentScale = e.scale;
-		// });
-
 
 	}
 
@@ -214,8 +215,14 @@ class Canvas {
 	}
 	
 	
-	testCoverage(obj) {
-		const result = obj.testCoverage();
+	testCoverage() {
+
+
+
+		// check errorCoverage property in all objects
+		const result = !this.card.errorCoverage && this.items.filter( i => i.errorCoverage === true).length === 0;
+
+		// if result is different from previous check perform callback
 		if (result !== this.testCardCoverageResult) {
 			this.handleCardCoverage(result);
 			this.testCardCoverageResult = result;
@@ -224,9 +231,20 @@ class Canvas {
 	}
 
 	finishEvent (e) {
-		console.log('mouseup');
 		const selectedObj = this.getSelectedObject();
 		selectedObj.done();
+
+		this.removeItems();
+	}
+	
+	removeItems() {
+		// remove items that out of template area
+		const items  = this.items.filter( i => i.removed !== true);
+		if (items.length != this.items.length) {
+			// make card selected
+			this.card.selected = true;
+			this.items = items;
+		}
 	}
 
 	setImage(imageUrl) {
@@ -244,15 +262,16 @@ class Canvas {
 		const imageId = +e.dataTransfer.getData("image-id");
 		const imageUrl  = e.dataTransfer.getData("image-url");
 		if (imageId) {
+			const pos = getEventPosition(e);
 			console.log('image id', imageId, imageUrl, getEventPosition(e));
-			const  cardItem =  this.addImageItem(imageId, imageUrl);
+			const  cardItem =  this.addImageItem(imageId, imageUrl, {initialPosition: pos});
 			cardItem.originPoint = getEventPosition(e);
 
 
 		}
 	}
 
-	addImageItem(id, url) {
+	addImageItem(id, url, options ={}) {
 
 
 		const itemArea = this.designerSettings.Coverage.Logo;
@@ -270,17 +289,23 @@ class Canvas {
 
 
 		const coverageArea = {
-			x: canvasCenter.x - this.templateSize.width /2 + itemArea.Left,
-			y: canvasCenter.y - this.templateSize.height /2 + itemArea.Top,
+			x: canvasCenter.x - this.templateArea.width /2 + itemArea.Left,
+			y: canvasCenter.y - this.templateArea.height /2 + itemArea.Top,
 			width:  itemArea.Right  - itemArea.Left,
 			height: itemArea.Bottom - itemArea.Top
 		};
 
+
+
 		const cardItem = new CardItem(id, url, {
 			coverageArea,
-			onOutOfArea: () => this.handleOutOfArea()
+			templateArea: this.templateArea,
+			initialPosition: options.initialPosition
 		});
 		this.items.push(cardItem);
+
+		this.removeItems();
+
 
 		return cardItem;
 

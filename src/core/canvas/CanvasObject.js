@@ -22,6 +22,8 @@ class CanvasObject {
 		};
 
 
+		this.errorCoverage = false;
+
 	}
 
 	getLeftTopCorner () {
@@ -157,8 +159,7 @@ class CanvasObject {
 			} ;
 
 		} else {
-			this.action = CANVAS_ACTIONS.NOTHING;
-			this.offset = null;
+			done();
 		}
 
 	}
@@ -212,22 +213,14 @@ class CanvasObject {
 			this.width = _toScaler(pos, centerPoint) * 2 * Math.cos(alpha);
 			this.height = this.width / ratio;
 
+			this.testCoverage();
+
 		} else if (this.action === CANVAS_ACTIONS.MOVING) {
 
-
-			// const offset = {
-			// 	x: this.mousePos.x - this.originPoint.x,
-			// 	y: this.mousePos.y - this.originPoint.y
-			// } ;
-
-			if (this.offset) {
-
-			}
 			this.originPoint.x =  pos.x - this.offset.x;
 			this.originPoint.y =  pos.y - this.offset.y;
 
-
-//			this.mousePos = pos;
+			this.testCoverage();
 		}
 	}
 
@@ -237,26 +230,32 @@ class CanvasObject {
 		this.savedRotation = null;
 		this.savedOrigPoing = null;
 		this.savedSize = null;
+		this.offset = null;
+
 	}
 
 
 
 	rotate (angle) {
 		this.rotation = angle;
+
+		this.testCoverage();
 	}
 
 	scale (val) {
 		const ratio = this.width / this.height;
-		document.querySelector('#log').innerHTML +=  " scale: "  +  val;
-
 		this.width *= val;
 		this.height = this.width / ratio;
+
+		this.testCoverage();
 
 	}
 
 	move(pos) {
 		this.originPoint.x += pos.x;
 		this.originPoint.y += pos.y;
+
+		this.testCoverage();
 	}
 
 
@@ -271,6 +270,8 @@ class CanvasObject {
 				x: this.savedOrigPoing.x + pos.x,
 				y: this.savedOrigPoing.y + pos.y
 			}
+
+			this.testCoverage();
 		}
 	}
 
@@ -287,6 +288,8 @@ class CanvasObject {
 		if (this.savedRotation !== null ) {
 			this.rotation -= (this.savedRotation - angle);
 			this.savedRotation = angle;
+
+			this.testCoverage();
 		}
 	}
 
@@ -304,6 +307,8 @@ class CanvasObject {
 		if (this.savedSize) {
 			this.width = this.savedSize.width * scale;
 			this.height = this.savedSize.height * scale;
+
+			this.testCoverage();
 		}
 	}
 
