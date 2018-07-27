@@ -113,43 +113,6 @@ class Card extends CanvasObject {
 		ctx.drawImage(this.template.image, this.template.x, this.template.y, this.template.width, this.template.height);
 
 
-
-		const vertices = [this.getLeftTopCorner(), this.getRightTopCorner(), this.getRightBottomCorner(), this.getLeftBottomCorner()];
-
-
-		var imageLinesDraw = this.verticesToLines(vertices);
-
-		const bleedBox = {
-			top: this.template.y,
-			left: this.template.x,
-			right: this.template.x + this.template.width,
-			bottom: this.template.y + this.template.height
-		};
-
-		var templateLinesDraw = this.verticesToLines([
-			{x: Math.round(bleedBox.left), y: Math.round(bleedBox.bottom)},
-			{x: Math.round(bleedBox.left), y: Math.round(bleedBox.top)},
-			{x: Math.round(bleedBox.right), y: Math.round(bleedBox.top)},
-			{x: Math.round(bleedBox.right), y: Math.round(bleedBox.bottom)}
-		]);
-
-		imageLinesDraw.forEach( line => {
-			ctx.strokeStyle = 'yellow';
-			ctx.beginPath();
-			ctx.moveTo(line.p1.x, line.p1.y);
-			ctx.lineTo(line.p2.x, line.p2.y);
-			ctx.stroke();
-		});
-
-		templateLinesDraw.forEach( line => {
-			ctx.strokeStyle = 'pink';
-			ctx.beginPath();
-			ctx.moveTo(line.p1.x, line.p1.y);
-			ctx.lineTo(line.p2.x, line.p2.y);
-			ctx.stroke();
-		});
-
-
 	}
 
 

@@ -161,7 +161,7 @@ class Canvas {
 	}
 
 	startEvent(e) {
-		const pos = getEventPosition(event);
+		const pos = getEventPosition(e);
 		this.findSelectedObject(pos).click(pos);
 		
 	}
