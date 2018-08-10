@@ -1,83 +1,145 @@
 import Card from './Card';
 import CardItem  from './CardItem';
+import AppSettings from '../AppSettings';
 
 import {getEventPosition} from './canvas-helper'
 import  Hammer from 'hammerjs';
 
+
 class Canvas {
 
-	constructor (designerSettings, canvasElement, options = {}) {
+	constructor (canvasElement, options = {}) {
 
 
-		this.designerSettings = designerSettings;
+		console.log('AppSettings', AppSettings);
 
-		this.canvas = document.querySelector(canvasElement);
+		this.canvas = canvasElement ? document.querySelector(canvasElement) : document.createElement('canvas');
+		if (!this.canvas.id) {
+			this.canvas.id = 'ssg-temp-canvas';
+			//document.body.appendChild(this.canvas);
+		}
+
+
 		this.ctx = this.canvas.getContext('2d');
 
-		if (options.width) {
-			this.canvas.setAttribute('width', `${options.width}`);
-		}
-		if (options.height) {
-			this.canvas.setAttribute('height', `${options.height}`);
+
+		if (options.preview) {
+			// get template image size
+			const {width, height} = options.config.card.template.image;
+			console.log(width, height);
+			this.canvas.setAttribute('width', `${width}`);
+			this.canvas.setAttribute('height', `${height}`);
+
+		} else {
+
+			if (options.width) {
+				this.canvas.setAttribute('width', `${options.width}`);
+			}
+			if (options.height) {
+				this.canvas.setAttribute('height', `${options.height}`);
+			}
 		}
 
+
+		this.canvas.onresize = () => {
+			console.log('canvas resizing...');
+		};
+
+
+		this.preview = options.preview;
 
 		this.handleCardCoverage = options.onCardCoverage || function() {};
 
-		const canvasCenter = {
-			x: this.ctx.canvas.width / 2,
-			y: this.ctx.canvas.height / 2,
-		};
-		let width = (designerSettings.Desktop.Right - designerSettings.Desktop.Left) || 241;
-		let height = (designerSettings.Desktop.Bottom - designerSettings.Desktop.Top) || 153;
-
+		let templateWidth =  (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241;
+		let templateHeight = (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153;
 
 		if (options.scale) {
-			const ratio = width / height;
-			width *= options.scale;
-			height *= ratio;
+			const ratio = templateWidth / templateWidth;
+			templateWidth *= options.scale;
+			templateWidth *= ratio;
 		}
-
-
-
-		this.templateArea = {
-			x: canvasCenter.x - width /2,
-			y: canvasCenter.y - height /2,
-			width,
-			height
-		};
-
-		this.card = new Card({
-			canvasCenter,
-			templateArea : this.templateArea,
-			templateUrl: designerSettings.DesignTemplate.UrlLarge
-		});
 
 		this.items = [];
 
-		if (options.touchDevice) {
-			this.setTouchEvents();
+
+		if (options.preview) {
+			//fit template area to whole available size
+			console.log('config', options.config);
+
+			this.templateArea = {
+				x: 0,
+				y: 0,
+				width: this.canvas.width,
+				height :this.canvas.height,
+			};
 		} else {
-			// mouse events
-			this.canvas.addEventListener('mousedown', e => this.startEvent(e));
-			this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
-			this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
+
+			const canvasCenter =  {
+				x: this.canvas.width / 2,
+				y: this.canvas.height / 2
+			};
+
+			this.templateArea = {
+				x: canvasCenter.x - templateWidth /2,
+				y: canvasCenter.y - templateHeight /2,
+				width: templateWidth,
+				height: templateHeight,
+			};
 
 		}
 
-		// dragg drop events
-		this.canvas.addEventListener('dragover', e => this.dragOver(e));
-		this.canvas.addEventListener('drop', e => this.drop(e));
+		this.card = new Card({
+			templateArea : this.templateArea,
+			templateUrl: AppSettings.designerSettings.DesignTemplate.UrlLarge,
+			preview: options.preview,
+			config: options.config ? options.config.card : null,
+		});
 
-		if (options.image) {
-			this.setImage(options.image);
+
+
+
+
+		if (options.config && options.config.items.length > 0) {
+			console.log('add items', options.config.items);
+
+			this.items = options.config.items.map( i => {
+				i.cardTemplateArea = options.config.card.template;
+				return new CardItem( i.id, i.imageUrl, {preview: true, config: i, templateArea: this.templateArea});
+			});
+
+
+		}
+
+		if (!options.preview) {
+			if (options.touchDevice) {
+				this.setTouchEvents();
+			} else {
+				// mouse events
+				this.canvas.addEventListener('mousedown', e => this.startEvent(e));
+				this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
+				this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
+			}
+
+			// drag drop events
+			this.canvas.addEventListener('dragover', e => this.dragOver(e));
+			this.canvas.addEventListener('drop', e => this.drop(e));
+
+			window.requestAnimationFrame(() => this.drawCard());
+		} else {
+			this.drawCard();
+		}
+
+
+
+		if (options.imageId && options.imageUrl) {
+			this.setImage(options.imageId, options.imageUrl);
 		}
 
 
 
 		this.testCardCoverageResult = false;
 
-		window.requestAnimationFrame(() => this.drawCard());
+
 
 	}
 
@@ -129,7 +191,7 @@ class Canvas {
 			
 		});
 		mc.on('panend', e => {
-			this.getSelectedObject().endMove()
+			this.getSelectedObject().endMove();
 			this.removeItems();
 		});
 		mc.on('singletap', e => {
@@ -156,7 +218,10 @@ class Canvas {
 		this.card.render(this.ctx);
 		this.items.forEach( item => item.render(this.ctx));
 
-		window.requestAnimationFrame(() => this.drawCard());
+		if (!this.preview) {
+			window.requestAnimationFrame(() => this.drawCard());
+		}
+
 
 	}
 
@@ -247,9 +312,8 @@ class Canvas {
 		}
 	}
 
-	setImage(imageUrl) {
-		this.card.setImage(imageUrl);
-
+	setImage(imageId, imageUrl) {
+		this.card.setImage(imageId, imageUrl);
 	}
 
 
@@ -259,22 +323,25 @@ class Canvas {
 
 	drop(e) {
 		e.preventDefault();
-		const imageId = +e.dataTransfer.getData("image-id");
-		const imageUrl  = e.dataTransfer.getData("image-url");
+
+		const data = JSON.parse(e.dataTransfer.getData('text'));
+
+
+
+		const imageId = +data.id;
+		const imageUrl  = data.url;
 		if (imageId) {
 			const pos = getEventPosition(e);
 			console.log('image id', imageId, imageUrl, getEventPosition(e));
 			const  cardItem =  this.addImageItem(imageId, imageUrl, {initialPosition: pos});
 			cardItem.originPoint = getEventPosition(e);
-
-
 		}
 	}
 
 	addImageItem(id, url, options ={}) {
 
 
-		const itemArea = this.designerSettings.Coverage.Logo;
+		const itemArea = AppSettings.designerSettings.Coverage.Logo;
 
 
 		// remove previously selected object
@@ -312,11 +379,46 @@ class Canvas {
 	}
 
 
-	// itemOutOfArea() {
-	// 	this.ctx.font = '12px Arial';
-	// 	this.ctx.fillStyle = '#000';
-	// 	this.ctx.fillText('Overlap', 10, 10);
-	// }
+	moveUp(val) {
+		this.getSelectedObject().moveUp(val);
+	}
+
+	moveDown(val) {
+		this.getSelectedObject().moveDown(val);
+	}
+
+	moveLeft(val) {
+		this.getSelectedObject().moveLeft(val);
+	}
+
+
+	moveRight(val) {
+		this.getSelectedObject().moveRight(val);
+	}
+
+
+	rotate(val) {
+		this.getSelectedObject().rotate(val);
+	}
+
+	flip() {
+		this.getSelectedObject().flip();
+	}
+
+
+	getConfiguration(){
+
+		const items =this.items.map(i => i.getConfiguration());
+		const card = this.card.getConfiguration();
+		return {
+			card,
+			items
+		}
+	}
+
+	getSnapshot() {
+		return this.canvas.toDataURL();
+	}
 
 }
 

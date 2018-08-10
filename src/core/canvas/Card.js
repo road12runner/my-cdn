@@ -6,13 +6,20 @@ class Card extends CanvasObject {
 	constructor (options = {}) {
 		super();
 
+		this.layerType = 'StockImageLayer';
+
 		this.template = options.templateArea;
-		this.originPoint = options.canvasCenter;
+		this.originPoint = {
+			x: options.templateArea.x +  options.templateArea.width / 2,
+			y: options.templateArea.y +  options.templateArea.height / 2
+		};
+		console.log(this.template);
 		this.imageOpacity = options.imageOpacity || 0.4;
 		this.action = CANVAS_ACTIONS.NOTHING;
 
 		this.width = this.template.width + 40;
 		this.height = this.template.height + 40;
+		this.preview = options.preview;
 
 		const templateImage = new Image();
 		templateImage.crossOrigin = 'Anonymous';
@@ -20,8 +27,6 @@ class Card extends CanvasObject {
 		templateImage.onload = () => {
 			this.template.loaded = true;
 			this.template.image = templateImage;
-			console.log(this.template);
-
 		};
 
 		this.locked = false;
@@ -30,9 +35,50 @@ class Card extends CanvasObject {
 		this.rotation = 0;
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
 
+
+		if (options.config) {
+
+			console.log(options.config);
+			console.log(this.template);
+
+			const ratio = options.config.template.width / options.config.template.height;
+			const offsetX = options.config.template.x;
+			const offsetY = options.config.template.y;
+
+			const previewScaleX =  this.template.width / options.config.template.width;
+			const previewScaleY =  this.template.height / options.config.template.height;
+
+			this.width = options.config.width * previewScaleX;
+			this.height = options.config.height * previewScaleY;
+
+
+
+
+			this.flip = options.config.flip;
+			this.rotation = options.config.rotation;
+			this.originPoint = {
+				x: (options.config.originPoint.x  - offsetX) * previewScaleX,
+				y: (options.config.originPoint.y  - offsetY) * previewScaleY,
+			};
+
+			this.img = options.config.image;
+			this.imageLoaded = true;
+
+			this.template.image = options.config.template.image;
+			this.template.loaded = options.config.template.loaded;
+
+
+		}
+
+
+		if (options.imageUrl) {
+			this.setImage(options.imageUrl);
+		}
+
 	}
 
-	setImage (url) {
+	setImage (id, url) {
+		this.id = id;
 		this.img = new Image();
 		this.img.crossOrigin = 'Anonymous';
 		this.img.src = url;
@@ -54,10 +100,13 @@ class Card extends CanvasObject {
 
 		// draw image with opacity
 		ctx.globalAlpha = this.imageOpacity;
+		if (this.flipped) {
+			ctx.scale(-1, 1);
+		}
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
 		ctx.globalAlpha = 1;
 
-		if (this.selected && !this.locked) {
+		if (this.selected && !this.locked && !this.preview) {
 			// draw border
 			ctx.strokeStyle = this.borderColor;
 			roundRect(ctx, -this.width / 2, -this.height / 2, this.width, this.height, 2);
@@ -106,12 +155,21 @@ class Card extends CanvasObject {
 			ctx.rotate(this.rotation * Math.PI / 180);
 		}
 
+		if (this.flipped) {
+			ctx.scale(-1, 1);
+		}
+
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
 
 		ctx.restore();
 
 		ctx.drawImage(this.template.image, this.template.x, this.template.y, this.template.width, this.template.height);
 
+
+		// ctx.beginPath();
+		// ctx.fillStyle= '#000';
+		// ctx.arc(this.originPoint.x, this.originPoint.y, 5, 0, 2 * Math.PI);
+		// ctx.fill();
 
 	}
 
@@ -255,17 +313,16 @@ class Card extends CanvasObject {
 
 
 
-	verticesToLines (vertices) {
-		var lines = [];
+	getConfiguration() {
+		const config = super.getConfiguration();
+		config.template = this.template;
+		config.image = this.img;
 
-		for (var i = 0; i < vertices.length; i++) {
-			var next = i + 1;
-			if (next === vertices.length) { next = 0; }
-			lines.push({p1: vertices[i], p2: vertices[next]});
-		}
-
-		return lines;
+		return config;
 	}
+
+
+
 
 }
 

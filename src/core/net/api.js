@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import qs from 'qs';
 //const  = ServerSide.Configuration.Urls.Api;
 //const hostname = 'https://localhost/api';
 const hostname = 'https://devserver.serversidegraphics.com/pcs/api/v1';
@@ -46,8 +46,46 @@ async function performGetRequest(url) {
 }
 
 
+
+async function performPostRequest(url, data = {}, encoding = 'application/json') {
+
+	let result = null;
+
+	let params = data;
+
+	if ("application/x-www-form-urlencoded" === encoding) {
+		params  = qs.stringify(params);
+	}
+
+	try {
+		const response  = await axios.post(url, params, { headers : {"Content-Type" : encoding}});
+		result = response.data;
+	} catch (e) {
+		console.log('error', e);
+	}
+
+
+	return result;
+}
+
+
+async function performPutRequest(url, data = {}) {
+
+	let result = null;
+
+	try {
+		const response  = await axios.put(url, data);
+		result = response.data
+	} catch (e) {
+		console.log('error', e);
+	}
+
+	return result;
+}
+
+
 export async function getDesigner(handoverKey) {
-	return await performGetRequest([hostname, 'designers', handoverKey, ].join('/'));
+	return await performGetRequest([hostname, 'designers', handoverKey ].join('/'));
 }
 
 
@@ -55,6 +93,24 @@ export function getDataByUrl(url) {
 	return performGetRequest(url);
 }
 
+export function createClient(handoverKey, params={} ) {
+	const url = [hostname, 'designers', handoverKey, 'clientdesigns'].join('/');
+	return performPostRequest(url, params, 'application/x-www-form-urlencoded');
+}
+
+
+export function getLanguage(handoverKey, lanugageId) {
+	return performGetRequest([hostname, 'designers', handoverKey, 'languages', lanugageId].join('/'))
+}
+
+export function submitLayer(handoverKey, layerType) {
+	const layerParam = `?type=${layerType}`;
+	return performPostRequest([hostname, 'designers', handoverKey, 'layers', layerParam].join('/'));
+}
+
+export function submitCard(handoverKey, cardImageId, data) {
+	return performPutRequest([hostname, 'designers', handoverKey, 'clientdesigns', cardImageId].join('/'), data);
+}
 
 
 

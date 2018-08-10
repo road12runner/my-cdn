@@ -3,11 +3,10 @@ import Designer from './Designer';
 import template from './templates/main-container.tmpl';
 
 class MainContainer {
-	constructor (designerSettings, parentElement) {
+	constructor (parentElement) {
 		// TODO add rendering
 		this.renderedTemplate = template;
 		this.parentElement = parentElement;
-		this.designerSettings = designerSettings;
 	}
 
 	// show main container
@@ -16,7 +15,7 @@ class MainContainer {
 		this.el = this.parentElement.querySelector('.main-container');
 
 		// show designer page
-		const designer = new Designer(this.designerSettings, this.el);
+		const designer = new Designer(this.el);
 		designer.show();
 
 	}

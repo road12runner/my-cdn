@@ -1,36 +1,108 @@
 import CanvasObject from './CanvasObject';
 import { roundRect, allInside } from './canvas-helper';
 
+import RedCros from '../../img/red-cross.png';
 
 
 class CardItem  extends CanvasObject{
 	constructor(id, url, options = {}) {
 		super();
 
+
+
 		this.coverageArea = options.coverageArea;
 		this.templateArea = options.templateArea;
+		this.layerType = 'StockImageLayer';
 
-		console.log('templateArea', this.templateArea);
 
-		this.width = options.width || 50;
-		this.height = options.height = 50;
-		this.rotation = 0;
+		this.id = id;
 
 		const bleeding = options.bleeding || 5;
 
-		this.originPoint = options.initialPosition || {
-			x: this.coverageArea.x + this.width /2 + bleeding,
-			y: this.coverageArea.y + this.height /2 + bleeding,
-		} ;
+		if (options.config) {
 
-		this.selected = true;
-		this.setImage(url);
+
+			if (options.preview) {
+				// adjust size and position for preview
+
+				// get scale
+				const previewScaleX = options.templateArea.width / options.config.cardTemplateArea.width;
+				const previewScaleY = options.templateArea.height / options.config.cardTemplateArea.height;
+				const offsetX = options.config.cardTemplateArea.x;
+				const offsetY = options.config.cardTemplateArea.y;
+
+
+				this.originPoint = {
+					x: (options.config.originPoint.x  - offsetX) * previewScaleX,
+					y: (options.config.originPoint.y  - offsetY) * previewScaleY,
+				};
+
+				this.width = options.config.width * previewScaleX;
+				this.height = options.config.height * previewScaleY;
+
+
+			} else {
+
+				this.originPoint = options.config.originPoint;
+				this.width = options.config.width;
+				this.height = options.config.height;
+
+				this.testCoverage();
+
+			}
+
+			// const ratio = options.config.template.width / options.config.template.height;
+			// const offsetX = options.config.template.x;
+			// const offsetY = options.config.template.y;
+			//
+			// const previewScaleX =  this.template.width / options.config.template.width;
+			// const previewScaleY =  this.template.height / options.config.template.height;
+			//
+			// this.width = options.config.width * previewScaleX;
+			// this.height = options.config.height * previewScaleY;
+
+
+
+
+			this.flip = options.config.flip;
+			this.rotation = options.config.rotation;
+
+
+			this.img =  options.config.image;
+			this.imageLoaded = true;
+			//this.setImage(options.config.imageUrl);
+
+
+		} else {
+			this.width = options.width || 50;
+			this.height = options.height = 50;
+
+			this.originPoint = options.initialPosition || {
+				x: this.coverageArea.x + this.width /2 + bleeding,
+				y: this.coverageArea.y + this.height /2 + bleeding,
+			} ;
+			this.selected = true;
+			this.rotation = 0;
+
+			this.setImage(url);
+			this.testCoverage();
+
+		}
+
+
 
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
 
 		this.removed = false;
 
-		this.testCoverage();
+
+
+
+		this.removedIcon = new Image();
+		this.removedIcon.src = RedCros;
+		this.removedIcon.onload = () => {
+			this.removedIconLoaded = true;
+		}
 	}
 
 	setImage (url) {
@@ -60,7 +132,7 @@ class CardItem  extends CanvasObject{
 			ctx.rotate(this.rotation * Math.PI / 180);
 		}
 
-		if (this.selected) {
+		if (this.selected && !this.preview) {
 			ctx.strokeStyle = this.borderColor;
 
 			// show coverage area
@@ -100,26 +172,88 @@ class CardItem  extends CanvasObject{
 
 
 
+		if (this.flipped) {
+			ctx.scale(-1, 1);
+		}
 
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
 		ctx.restore();
 
 
 
-		if (this.removed) {
-			ctx.save();
-			ctx.translate(this.originPoint.x, this.originPoint.y);
-			ctx.beginPath();
-			ctx.fillStyle = 'rgba(255,0,0, .9)';
-			ctx.arc(0 , 0 , this.width / 3.2, 0, 2 * Math.PI);
-			ctx.fill();
-			ctx.fillStyle = '#fff';
-			ctx.strokeStyle = '#fff';
-			roundRect(ctx, -this.width /4, -this.height /20,  this.width /2,  this.height /10, 1, '#ffffff', );
-			ctx.restore();
+
+		if (this.removed ) {
+
+			if (this.removedIconLoaded) {
+				ctx.save();
+
+				const {x, y} = this.originPoint;
+				ctx.translate( x, y);
+				if (this.rotation !== 0) {
+					ctx.rotate(this.rotation * Math.PI / 180);
+				}
+
+				ctx.fillStyle = 'rgba(200,200,200, 1)';
+				ctx.arc(-this.width /2 , -this.height/2 , 10, 0, 2 * Math.PI);
+				ctx.fill();
+
+
+
+				ctx.drawImage(this.removedIcon,  -this.width /2 - 5 ,  -this.height /2 - 5,   10,  10);
+
+				ctx.restore();
+			}
+
+
+
 		}
 
+
+		// if (this.removed) {
+		// 	ctx.save();
+		// 	ctx.translate(this.originPoint.x, this.originPoint.y);
+		//
+		// 	if (this.rotation !== 0) {
+		// 		ctx.rotate(this.rotation * Math.PI / 180);
+		// 	}
+		//
+		// 	ctx.beginPath();
+		// 	//ctx.fillStyle = 'rgba(255,0,0, .9)';
+		// 	ctx.fillStyle = 'rgba(200,200,200, 1)';
+		// 	ctx.lineWidth = 2;
+		//
+		// 	// ctx.moveTo( - this.width /2, -this.height /2);
+		// 	// ctx.lineTo( this.width /2, this.height /2);
+		// 	//
+		// 	// ctx.moveTo( - this.width /2, this.height /2);
+		// 	// ctx.lineTo( this.width /2, -this.height /2);
+		//
+		// 	ctx.arc(-this.width /2 , -this.height/2 , 10, 0, 2 * Math.PI);
+		// 	ctx.fill();
+		//
+		// 	ctx.beginPath();
+		// 	ctx.strokeStyle = 'rgba(0,0,0, 1)';
+		//
+		// 	const x =  - this.width /2;
+		// 	const y = - this.height /2;
+		//
+		// 	ctx.moveTo(  x - 4, y -4);
+		// 	ctx.lineTo(  x + 4, y + 4);
+		//
+		//
+		// 	ctx.moveTo(  x + 4, y - 4);
+		// 	ctx.lineTo(  x - 4, y + 4);
+		//
+		//
+		// 	ctx.stroke();
+		// 	ctx.restore();
+		// }
+
 	}
+
+
+
+
 
 
 	hitTest(pos) {
@@ -152,6 +286,12 @@ class CardItem  extends CanvasObject{
 		return this.errorCoverage;
 	}
 
+
+	getConfiguration(){
+		const config = super.getConfiguration();
+		config.image = this.img;
+		return config;
+	}
 
 
 }

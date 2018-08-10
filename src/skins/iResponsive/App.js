@@ -11,7 +11,7 @@ class App {
 	constructor({settings, handoverKey, rootElement}) {
 
 		this.settings = settings;
-		this.handoverKey = handoverKey;
+		AppSettings.handoverKey = handoverKey;
 		this.rootElement = rootElement;
 		this.options = settings.options || {};
 
@@ -31,41 +31,69 @@ class App {
 
 		console.log(width, height);
 
+		const that = this;
 
-
-		api.getDesigner(this.handoverKey).then(response => {
+		//load designer
+		async function loadDesigner() {
+			const response = await api.getDesigner(AppSettings.handoverKey);
 			if (!response) {
 				//TODO handle bad response
 				return;
 			}
 
-			this.Designer = response;
-			AppSettings.settings = response;
+			AppSettings.designerSettings = response;
+			console.log('designerSettings', AppSettings.designerSettings);
 
-			console.log('designer', this.Designer);
-			if (this.options.orientation) {
-				this.Designer.Orientation.Type = this.options.orientation;
+			if (that.options.orientation) {
+				AppSettings.designerSettings.Orientation.Type = this.options.orientation;
 			}
 
-			if (this.options.languageId) {
-				this.Designer.Language = this.options.languageId;
+			if (that.options.languageId) {
+				AppSettings.designerSettings.Language = this.options.languageId;
 			}
 
 
-			if (this.Designer.Galleries.Enabled === true && this.Designer.Galleries.URL) {
-				this.galleryManager = new GalleryManager();
-				this.galleryManager.loadGalleries(this.Designer.Galleries.URL);
+			if (AppSettings.designerSettings.Galleries.Enabled === true && AppSettings.designerSettings.Galleries.URL) {
 			}
 
-			//const template = document.createElement(designerTemplate);
+			return response;
+		}
 
 
-			//console.log('template', designerTemplate, this);
-			//this.rootElement.innerHTML = designerTemplate;
-			const mainContainer = new MainContainer(this.Designer, this.rootElement);
+
+		async function loadGalleries() {
+			console.log('load galleries');
+			const galleryManager = new GalleryManager();
+			return await galleryManager.loadGalleries(AppSettings.designerSettings.Galleries.URL);
+		}
+
+		//create client
+		async function createClient() {
+			const client = await api.createClient(AppSettings.handoverKey, {LanguageId: AppSettings.designerSettings.Language});
+			AppSettings.client = client;
+			AppSettings.clientId = client.CardImageId;
+			console.log('client info', AppSettings.client);
+			return client;
+		}
+
+		//load language data
+		async function loadLanguage() {
+			const res = await api.getLanguage(AppSettings.handoverKey, AppSettings.designerSettings.Language);
+			console.log('language', res);
+			AppSettings.Language = res || {};
+			AppSettings.Language.LanguageId = AppSettings.designerSettings.Language;
+			return res;
+		}
+
+
+		// call chain of requests
+		loadDesigner().then(createClient).then(loadGalleries).then(loadLanguage).then( () => {
+			console.log('show maincontainer');
+			const mainContainer = new MainContainer(this.rootElement);
 			mainContainer.show();
+		})
 
-		});
+
 	}
 
 	

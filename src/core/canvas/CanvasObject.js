@@ -12,6 +12,7 @@ class CanvasObject {
 		this.width = 0;
 		this.height = 0;
 		this.rotation = 0;
+		this.flipped = false;
 
 		this.hoverCorners = {
 			leftTop: false,
@@ -159,7 +160,7 @@ class CanvasObject {
 			} ;
 
 		} else {
-			done();
+			this.done();
 		}
 
 	}
@@ -236,11 +237,6 @@ class CanvasObject {
 
 
 
-	rotate (angle) {
-		this.rotation = angle;
-
-		this.testCoverage();
-	}
 
 	scale (val) {
 		const ratio = this.width / this.height;
@@ -259,6 +255,37 @@ class CanvasObject {
 	}
 
 
+	moveUp(val) {
+		this.originPoint.y -= val;
+		this.testCoverage();
+	}
+
+
+	moveDown(val) {
+		this.originPoint.y += val;
+		this.testCoverage();
+	}
+
+	moveLeft(val) {
+		this.originPoint.x -= val;
+		this.testCoverage();
+	}
+
+	moveRight(val) {
+		this.originPoint.x += val;
+		this.testCoverage();
+	}
+
+
+	rotate(val) {
+		this.rotation += val;
+		this.testCoverage();
+	}
+
+
+	flip() {
+		this.flipped = !this.flipped;
+	}
 
 	startMove() {
 		this.savedOrigPoing = Object.assign({}, this.originPoint);
@@ -269,7 +296,7 @@ class CanvasObject {
 			this.originPoint = {
 				x: this.savedOrigPoing.x + pos.x,
 				y: this.savedOrigPoing.y + pos.y
-			}
+			};
 
 			this.testCoverage();
 		}
@@ -317,6 +344,49 @@ class CanvasObject {
 	}
 
 
+
+	getConfiguration() {
+		return {
+			id: this.id,
+			layerType: this.layerType,
+			imageUrl : this.img.src,
+			rotation: this.rotation,
+			flipped: this.flipped,
+			width: this.width,
+			height: this.height,
+			originPoint: this.originPoint,
+
+		};
+	}
+
+
+
+	getBoundRect() {
+
+		const points = [this.getLeftBottomCorner(),
+			this.getRightTopCorner(),
+			this.getLeftTopCorner(),
+			this.getRightBottomCorner()];
+
+		const xArrays = points.map(function (v) {
+			return v.x;
+		});
+
+		const yArrays = points.map(function (v) {
+			return v.y;
+		});
+
+		//console.log(xArrays, yArrays);
+
+
+		return {
+			left: Math.min.apply(null, xArrays),
+			top:  Math.min.apply(null, yArrays),
+			right: Math.max.apply(null, xArrays),
+			bottom: Math.max.apply(null, yArrays)
+		};
+
+	}
 
 }
 

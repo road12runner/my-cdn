@@ -23,40 +23,40 @@ class  GalleryManager {
 
 	loadGalleries(galleryUrl) {
 
+		return new Promise( (resolve, reject) => {
 
-		api.getDataByUrl(galleryUrl).then( data => {
-			if (!data) {
-				return;
-			}
-
-			let count = 0;
-
-			this.galleries = data;
-
-			for(const gallery of this.galleries) {
-
-				if (gallery.ImageType === CLIPART_IMAGE_TYPE) {
-					this.isClipArtEnabled = true;
+			api.getDataByUrl(galleryUrl).then( data => {
+				if (!data) {
+					return;
 				}
 
-				api.getDataByUrl(gallery.Url).then(data => {
-					gallery.images = data.Images;
-					console.log(gallery);
+				let count = 0;
 
-					count++;
+				this.galleries = data;
 
+				for(const gallery of this.galleries) {
 
-					if (count === this.galleries.length) {
-						// all galleries has been loaded
-						const event = document.createEvent('Event');
-						event.initEvent(GALLERY_LOADED, true, true);
-						document.dispatchEvent(event);
+					if (gallery.ImageType === CLIPART_IMAGE_TYPE) {
+						this.isClipArtEnabled = true;
 					}
 
-				});
-			}
+					api.getDataByUrl(gallery.Url).then(data => {
+						gallery.images = data.Images;
+						console.log(gallery);
 
-		})
+						count++;
+
+
+						if (count === this.galleries.length) {
+							// all galleries has been loaded
+							resolve();
+						}
+					});
+				}
+
+			});
+
+		});
 
 	}
 
