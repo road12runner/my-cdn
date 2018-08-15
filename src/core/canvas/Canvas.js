@@ -1,27 +1,24 @@
 import Card from './Card';
-import CardItem  from './CardItem';
+import ImageItem from './ImageItem';
+import TextItem from './TextItem';
+
 import AppSettings from '../AppSettings';
 
-import {getEventPosition} from './canvas-helper'
-import  Hammer from 'hammerjs';
-
+import { getEventPosition } from './canvas-helper';
+import Hammer from 'hammerjs';
 
 class Canvas {
 
 	constructor (canvasElement, options = {}) {
-
 
 		console.log('AppSettings', AppSettings);
 
 		this.canvas = canvasElement ? document.querySelector(canvasElement) : document.createElement('canvas');
 		if (!this.canvas.id) {
 			this.canvas.id = 'ssg-temp-canvas';
-			//document.body.appendChild(this.canvas);
 		}
 
-
 		this.ctx = this.canvas.getContext('2d');
-
 
 		if (options.preview) {
 			// get template image size
@@ -32,35 +29,58 @@ class Canvas {
 
 		} else {
 
-			if (options.width) {
-				this.canvas.setAttribute('width', `${options.width}`);
+			let {width, height} = options;
+			if (!width || !height) {
+				const rect = this.canvas.getBoundingClientRect();
+				width = rect.width;
+				height = rect.height;
 			}
-			if (options.height) {
-				this.canvas.setAttribute('height', `${options.height}`);
-			}
+
+			this.canvas.setAttribute('width', `${width}`);
+			this.canvas.setAttribute('height', `${height}`);
+			this.canvas.width = width;
+			this.canvas.height = height;
 		}
 
+		if (options.margin) {
+			this.margin = options.margin;
+		}
 
-		this.canvas.onresize = () => {
-			console.log('canvas resizing...');
-		};
-
+		if (options.isResponsible) {
+			window.addEventListener('resize', () => this.handleResize());
+		}
 
 		this.preview = options.preview;
 
-		this.handleCardCoverage = options.onCardCoverage || function() {};
+		this.handleCardCoverage = options.onCardCoverage || function () {};
 
-		let templateWidth =  (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241;
+		let templateWidth = (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241;
 		let templateHeight = (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153;
 
+		this.originalTemplateSize = {
+			width: templateWidth,
+			height: templateHeight
+		};
+
 		if (options.scale) {
-			const ratio = templateWidth / templateWidth;
+			this.scale = options.scale;
+			const ratio = templateWidth / templateHeight;
 			templateWidth *= options.scale;
-			templateWidth *= ratio;
+			templateHeight = templateWidth / ratio;
+		} else if (this.margin) {
+
+			const ratio = templateWidth / templateHeight;
+			templateWidth = this.canvas.width - (2 * this.margin);
+			templateHeight = Math.floor(templateWidth / ratio);
+			console.log('canvas size', templateWidth, templateHeight);
+			console.log(this.canvas.getBoundingClientRect());
+			this.scale = templateWidth / this.originalTemplateSize.width;
+
+		} else {
+			this.scale = 1;
 		}
 
 		this.items = [];
-
 
 		if (options.preview) {
 			//fit template area to whole available size
@@ -70,43 +90,38 @@ class Canvas {
 				x: 0,
 				y: 0,
 				width: this.canvas.width,
-				height :this.canvas.height,
+				height: this.canvas.height,
 			};
 		} else {
 
-			const canvasCenter =  {
+			const canvasCenter = {
 				x: this.canvas.width / 2,
 				y: this.canvas.height / 2
 			};
 
 			this.templateArea = {
-				x: canvasCenter.x - templateWidth /2,
-				y: canvasCenter.y - templateHeight /2,
+				x: canvasCenter.x - templateWidth / 2,
+				y: canvasCenter.y - templateHeight / 2,
 				width: templateWidth,
 				height: templateHeight,
 			};
 
 		}
 
-		this.card = new Card({
-			templateArea : this.templateArea,
+		this.card = new Card(this.ctx, {
+			templateArea: this.templateArea,
 			templateUrl: AppSettings.designerSettings.DesignTemplate.UrlLarge,
 			preview: options.preview,
 			config: options.config ? options.config.card : null,
 		});
 
-
-
-
-
 		if (options.config && options.config.items.length > 0) {
 			console.log('add items', options.config.items);
 
-			this.items = options.config.items.map( i => {
+			this.items = options.config.items.map(i => {
 				i.cardTemplateArea = options.config.card.template;
-				return new CardItem( i.id, i.imageUrl, {preview: true, config: i, templateArea: this.templateArea});
+				return new ImageItem(i.id, i.imageUrl, {preview: true, config: i, templateArea: this.templateArea});
 			});
-
 
 		}
 
@@ -129,37 +144,29 @@ class Canvas {
 			this.drawCard();
 		}
 
-
-
 		if (options.imageId && options.imageUrl) {
 			this.setImage(options.imageId, options.imageUrl);
 		}
 
-
-
 		this.testCardCoverageResult = false;
-
-
 
 	}
 
-
-	setTouchEvents() {
+	setTouchEvents () {
 		const mc = new Hammer.Manager(this.canvas);
 		// create a pinch and rotate recognizer
 		// these require 2 pointers
 		const pinch = new Hammer.Pinch();
 		const rotate = new Hammer.Rotate();
 		const pan = new Hammer.Pan();
-		
-		const tap= new Hammer.Tap({ event: 'singletap' });
-		
+
+		const tap = new Hammer.Tap({event: 'singletap'});
+
 		// we want to detect both the same time
 		pinch.recognizeWith(rotate);
 
 		// add to the Manager
 		mc.add([pinch, rotate, pan, tap]);
-
 
 		mc.on('rotatestart', e => this.getSelectedObject().startRotate(e.rotation));
 		mc.on('rotateend', e => {
@@ -176,71 +183,71 @@ class Canvas {
 			this.getSelectedObject().endZoom();
 			this.removeItems();
 		});
-		mc.on('pinchmove', e =>{
+		mc.on('pinchmove', e => {
 			const obj = this.getSelectedObject();
 			obj.doZoom(e.scale);
 			this.testCoverage();
 		});
 		mc.on('panstart', e => {
-			this.getSelectedObject().startMove()
+			this.getSelectedObject().startMove();
 		});
 		mc.on('panmove', e => {
 			const obj = this.getSelectedObject();
 			obj.doMove({x: e.deltaX, y: e.deltaY});
 			this.testCoverage();
-			
+
 		});
 		mc.on('panend', e => {
 			this.getSelectedObject().endMove();
 			this.removeItems();
 		});
 		mc.on('singletap', e => {
-			
-			function getPos(e) {
+
+			function getPos (e) {
 				const rect = e.target.getBoundingClientRect();
 				const eventPos = e.center;
-				
+
 				return {
 					x: eventPos.x - rect.left,
 					y: eventPos.y - rect.top
 				};
 			}
-			
+
 			const pos = getPos(e);
 			this.findSelectedObject(pos);
 		});
 
 	}
 
-	drawCard() {
+	drawCard () {
 
 		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		this.card.render(this.ctx);
-		this.items.forEach( item => item.render(this.ctx));
+		this.items.forEach(item => item.render(this.ctx));
 
 		if (!this.preview) {
 			window.requestAnimationFrame(() => this.drawCard());
 		}
 
-
 	}
 
-	startEvent(e) {
+	startEvent (e) {
 		const pos = getEventPosition(e);
+		console.log(pos);
 		this.findSelectedObject(pos).click(pos);
-		
+
 	}
 
-	findSelectedObject(pos) {
+	findSelectedObject (pos) {
 		// check if events happens in already selected item
 		let selectedObject = null;
-		let selectedItems = this.items.filter( item => item.selected === true && item.hitTest(pos));
+		let selectedItems = this.items.filter(item => item.selected === true && item.hitTest(pos));
 		if (selectedItems.length === 1) {
 			selectedObject = selectedItems[0];
 		} else {
-			
+
 			for (const item of this.items) {
-				if ( !selectedObject && item.hitTest(pos)) {
+				if (!selectedObject && item.hitTest(pos)) {
 					item.selected = true;
 					selectedObject = item;
 				} else {
@@ -248,51 +255,47 @@ class Canvas {
 				}
 			}
 		}
-		
+
 		if (selectedObject) {
 			// found an item - remove selection from card and delegate click event to selected item
 			this.card.selected = false;
 			return selectedObject;
-			
+
 		} else {
-			
+
 			// select card and pass the click event
 			this.card.selected = true;
 			return this.card;
-			
+
 		}
-		
-	}
-	
-	
-	
 
-	getSelectedObject() {
-		return this.card.selected ? this.card : this.items.find( item => item.selected === true);
 	}
 
-	keepEvent(e) {
+	getSelectedObject () {
+		return this.card.selected ? this.card : this.items.find(item => item.selected === true);
+	}
+
+	keepEvent (e) {
 		const pos = getEventPosition(e);
 
 		const selectedObj = this.getSelectedObject();
 		selectedObj.hover(pos);
 		this.testCoverage(selectedObj);
 	}
-	
-	
-	testCoverage() {
+
+	testCoverage () {
 
 
 
 		// check errorCoverage property in all objects
-		const result = !this.card.errorCoverage && this.items.filter( i => i.errorCoverage === true).length === 0;
+		const result = !this.card.errorCoverage && this.items.filter(i => i.errorCoverage === true).length === 0;
 
 		// if result is different from previous check perform callback
 		if (result !== this.testCardCoverageResult) {
 			this.handleCardCoverage(result);
 			this.testCardCoverageResult = result;
 		}
-		
+
 	}
 
 	finishEvent (e) {
@@ -301,10 +304,10 @@ class Canvas {
 
 		this.removeItems();
 	}
-	
-	removeItems() {
+
+	removeItems () {
 		// remove items that out of template area
-		const items  = this.items.filter( i => i.removed !== true);
+		const items = this.items.filter(i => i.removed !== true);
 		if (items.length != this.items.length) {
 			// make card selected
 			this.card.selected = true;
@@ -312,116 +315,181 @@ class Canvas {
 		}
 	}
 
-	setImage(imageId, imageUrl) {
+	setImage (imageId, imageUrl) {
 		this.card.setImage(imageId, imageUrl);
 	}
 
-
-	dragOver(e) {
+	dragOver (e) {
 		e.preventDefault();
 	}
 
-	drop(e) {
+	drop (e) {
 		e.preventDefault();
 
 		const data = JSON.parse(e.dataTransfer.getData('text'));
 
-
-
 		const imageId = +data.id;
-		const imageUrl  = data.url;
+		const imageUrl = data.url;
 		if (imageId) {
 			const pos = getEventPosition(e);
 			console.log('image id', imageId, imageUrl, getEventPosition(e));
-			const  cardItem =  this.addImageItem(imageId, imageUrl, {initialPosition: pos});
+			const cardItem = this.addImageItem(imageId, imageUrl, {initialPosition: pos});
 			cardItem.originPoint = getEventPosition(e);
 		}
 	}
 
-	addImageItem(id, url, options ={}) {
-
+	addImageItem (id, url, options = {}) {
 
 		const itemArea = AppSettings.designerSettings.Coverage.Logo;
 
-
 		// remove previously selected object
 		this.card.selected = false;
-		this.items.forEach( item => item.selected = false );
+		this.items.forEach(item => item.selected = false);
+
+		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
 
 		const canvasCenter = {
-			x: this.ctx.canvas.width / 2,
-			y: this.ctx.canvas.height / 2,
+			x: this.canvas.width / 2,
+			y: this.canvas.height / 2
 		};
 
-
+		const templateArea = {
+			width: this.card.width,
+			height: this.card.height,
+			x: -this.card.template.width / 2,
+			y: -this.card.template.height / 2
+		};
 
 		const coverageArea = {
-			x: canvasCenter.x - this.templateArea.width /2 + itemArea.Left,
-			y: canvasCenter.y - this.templateArea.height /2 + itemArea.Top,
-			width:  itemArea.Right  - itemArea.Left,
-			height: itemArea.Bottom - itemArea.Top
+			x: (templateArea.x + itemArea.Left * canvasScale),
+			y: (templateArea.y + itemArea.Top * canvasScale),
+			width: ((itemArea.Right - itemArea.Left) * canvasScale),
+			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
 		};
 
-
-
-		const cardItem = new CardItem(id, url, {
+		const cardItem = new ImageItem(id, url, {
 			coverageArea,
-			templateArea: this.templateArea,
-			initialPosition: options.initialPosition
+			templateArea,
+			canvasCenter,
+			initialPosition: options.initialPosition,
+			width: 50 * canvasScale,
+			height: 50 * canvasScale
 		});
 		this.items.push(cardItem);
 
 		this.removeItems();
 
-
 		return cardItem;
 
 	}
 
+	getScale () {
+		return this.card.template.width / this.originalTemplateSize.width;
+	}
 
-	moveUp(val) {
+	addTextItem (id, text, options = {}) {
+
+
+		//TODO add text coverage
+		const itemArea = AppSettings.designerSettings.Coverage.Logo;
+
+		// remove previously selected object
+		this.card.selected = false;
+		this.items.forEach(item => item.selected = false);
+
+		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
+
+		const coverageArea = {
+			x: (this.card.template.x + itemArea.Left * canvasScale),
+			y: (this.card.template.y + itemArea.Top * canvasScale),
+			width: ((itemArea.Right - itemArea.Left) * canvasScale),
+			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
+		};
+
+		const cardItem = new TextItem('test', 'Hello World', this.ctx, {
+			coverageArea,
+			templateArea: this.templateArea,
+			initialPosition: options.initialPosition,
+		});
+		this.items.push(cardItem);
+		this.removeItems();
+		return cardItem;
+	}
+
+	moveUp (val) {
 		this.getSelectedObject().moveUp(val);
 	}
 
-	moveDown(val) {
+	moveDown (val) {
 		this.getSelectedObject().moveDown(val);
 	}
 
-	moveLeft(val) {
+	moveLeft (val) {
 		this.getSelectedObject().moveLeft(val);
 	}
 
-
-	moveRight(val) {
+	moveRight (val) {
 		this.getSelectedObject().moveRight(val);
 	}
 
-
-	rotate(val) {
+	rotate (val) {
 		this.getSelectedObject().rotate(val);
 	}
 
-	flip() {
+	flip () {
 		this.getSelectedObject().flip();
 	}
 
+	getConfiguration () {
 
-	getConfiguration(){
+		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
 
-		const items =this.items.map(i => i.getConfiguration());
-		const card = this.card.getConfiguration();
+		const items = this.items.map(i => i.getConfiguration(canvasScale));
+		const card = this.card.getConfiguration(canvasScale);
 		return {
 			card,
 			items
-		}
+		};
 	}
 
-	getSnapshot() {
+	getSnapshot () {
 		return this.canvas.toDataURL();
 	}
 
+	handleResize () {
+		const {width, height} = this.canvas.getBoundingClientRect();
+
+		//if (width < this.canvas.width) {
+		this.scale = width / this.canvas.width;
+		this.canvas.width = width;
+		this.canvas.height = height;
+		this.card.handleResize(this.scale);
+		this.items.forEach(item => item.handleResize(this.scale));
+
+		//}
+
+	}
+
+	static getPreviewImage (canvasObject, width, height) {
+		console.log(canvasObject, width, height);
+
+		const previewCanvas = document.createElement('canvas');
+		previewCanvas.width = width;
+		previewCanvas.height = height;
+		const previewCanvasContext = previewCanvas.getContext('2d');
+
+		const scale = {
+			width: width / canvasObject.card.template.width,
+			height: height / canvasObject.card.template.height
+		};
+
+		Card.preview(canvasObject.card, previewCanvasContext);
+		canvasObject.items.forEach(item => item.constructor.name === 'ImageItem' ? ImageItem.preview(item, scale, previewCanvasContext) : TextItem.preview(item, scale, previewCanvasContext));
+
+		//TODO remove previewCanvas ????
+		return previewCanvas.toDataURL();
+	}
+
 }
-
-
 
 export default Canvas;

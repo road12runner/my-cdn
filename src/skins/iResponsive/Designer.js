@@ -35,7 +35,9 @@ class Designer {
 			imageUrl: this.galleryManager.galleries[0].images[0].LargeImage,
 			onCardCoverage: e => this.handleTestCoverage(e),
 			touchDevice: AppSettings.isTouchDevice(),
-			margin: 50
+			//margin: 100,
+			scale: 2,
+			isResponsible: true
 		});
 
 
@@ -135,75 +137,12 @@ class Designer {
 
 		this.el.querySelector('#btn-preview').addEventListener('click', ()=> {
 			this.renderPreview();
-
-			// const config = this.canvas.getConfiguration();
-			// console.log(config);
-			//
-			//
-			// const previewEl = this.parentElement.querySelector('.preview-container');
-			//
-			// const {width, height} =  previewEl.getBoundingClientRect();
-			//
-			// const previewCanvasEL = document.createElement('canvas');
-			// previewCanvasEL.id = 'preview-canvas';
-			// previewCanvasEL.width = width;
-			// previewCanvasEL.height = height;
-			// previewEl.appendChild(previewCanvasEL);
-			// //
-			// //
-			// //
-			// this.previewCanvas = new Canvas(this.designerSettins, `#${previewCanvasEL.id}`, {
-			// 	preview: true,
-			// 	config,
-			// });
-			//
-			//
-			//
-			// const conf = {
-			// 	card: {
-			// 		flipped : false,
-			// 		height : 193,
-			// 		id : undefined,
-			// 		imageUrl : "https://devserver.serversidegraphics.com/PCS/API/V1/designers/56bb9aca-b2ee-458b-969f-8e8f9335f9f8/Images/5940.Jpg",
-			// 		originPoint : {
-			// 			x : 200,
-			// 			y : 200
-			// 		},
-			// 		rotation : 0,
-			// 		width : 281
-			// 	},
-			// 	items : []
-			// }
-
-
-			// crop is not good as it should interpolate on big image
-			// function crop (canvas, offsetX, offsetY, width, height, destWith, destHeight, callback) {
-			// 	// create an in-memory canvas
-			// 	var buffer = document.createElement('canvas');
-			// 	var b_ctx = buffer.getContext('2d');
-			// 	// set its width/height to the required ones
-			// 	buffer.width = destWith;
-			// 	buffer.height = destHeight;
-			// 	// draw the main canvas on our buffer one
-			// 	// drawImage(source, source_X, source_Y, source_Width, source_Height,
-			// 	//  dest_X, dest_Y, dest_Width, dest_Height)
-			// 	b_ctx.drawImage(canvas, offsetX, offsetY, width, height,
-			// 		0, 0, buffer.width, buffer.height);
-			// 	// now call the callback with the dataURL of our buffer canvas
-			// 	callback(buffer.toDataURL());
-			// }
-			//
-			//
-			// const canvasEl = this.el.querySelector('#ssg-canvas');
-			//
-			// crop(canvasEl, this.canvas.templateArea.x, this.canvas.templateArea.y, this.canvas.templateArea.width, this.canvas.templateArea.height, 800, 600, function (dataUrl) {
-			// 	previewEl.style.backgroundImage = `url(${dataUrl})`;
-			// });
-
-
 		});
 
 
+		this.el.querySelector('#btn-text').onclick = () => {
+			this.canvas.addTextItem('test', 'text');
+		}
 
 	}
 
@@ -212,45 +151,21 @@ class Designer {
 
 		const {width, height} =  previewEl.getBoundingClientRect();
 
-		// const previewCanvasEL = document.createElement('canvas');
-		// previewCanvasEL.id = 'preview-canvas';
-		// previewCanvasEL.width = width;
-		// previewCanvasEL.height = height;
-		// previewEl.appendChild(previewCanvasEL);
+		const img = Canvas.getPreviewImage(this.canvas, width, height);
+		//console.log(img);
+
+		// const config = this.canvas.getConfiguration();
+		// const previewCanvas = new Canvas(null, {
+		// 	preview: true,
+		// 	config,
+		// });
 		//
 		//
-		//
-
-
-
-		// const config = {
-		// 	card: {
-		// 		flipped : false,
-		// 		height : 193,
-		// 		id : undefined,
-		// 		imageUrl : "https://devserver.serversidegraphics.com/PCS/API/V1/designers/56bb9aca-b2ee-458b-969f-8e8f9335f9f8/Images/5940.Jpg",
-		// 		originPoint : {
-		// 			x : 200,
-		// 			y : 200
-		// 		},
-		// 		rotation : 0,
-		// 		width : 281
-		// 	},
-		// 	items : []
-		// };
-
-		const config = this.canvas.getConfiguration();
-
-		const previewCanvas = new Canvas(null, {
-			preview: true,
-			config,
-		});
-
-
-		const previewImgUrl = previewCanvas.getSnapshot();
-		console.log('previewImage', previewImgUrl);
+		// const previewImgUrl = previewCanvas.getSnapshot();
+		// console.log('previewImage', previewImgUrl);
+		// const previewImage = new Image();
 		const previewImage = new Image();
-		previewImage.src = previewImgUrl;
+		previewImage.src = img;
 		previewImage.onload = () => {
 			clearElement(previewEl);
 			previewEl.appendChild(previewImage);
@@ -275,17 +190,21 @@ class Designer {
 
 		const template = this.canvas.card.template;
 		console.log(template);
+
+		const canvasScale = this.canvas.getScale();
+		console.log('canvasScale', canvasScale);
+
 		layers.forEach( (layer, i) => {
 
 			api.submitLayer(AppSettings.handoverKey, layer.layerType).then( layerConfig => {
 				console.log(layerConfig);
 				count++;
 
-				const layerCoords = layer.getBoundRect();
-				layerConfig.Configuration.Left = Math.floor(layerCoords.left - template.x);
-				layerConfig.Configuration.Top = Math.floor(layerCoords.top - template.y);
-				layerConfig.Configuration.Right = Math.floor(layerCoords.right - template.x);
-				layerConfig.Configuration.Bottom = Math.floor(layerCoords.bottom - template.y);
+				const layerCoords = layer.getBoundRect(canvasScale);
+				layerConfig.Configuration.Left = Math.floor( (layerCoords.left - template.x) / canvasScale);
+				layerConfig.Configuration.Top = Math.floor( (layerCoords.top - template.y) / canvasScale);
+				layerConfig.Configuration.Right = Math.floor((layerCoords.right - template.x) / canvasScale);
+				layerConfig.Configuration.Bottom = Math.floor(  (layerCoords.bottom - template.y) / canvasScale);
 				layerConfig.Configuration.Rotation = Math.floor(layer.rotation);
 				layerConfig.Configuration.Flip = layer.flipped ? 1: 0;
 

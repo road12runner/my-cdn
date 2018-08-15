@@ -4,10 +4,11 @@ import { isInside } from './canvas-helper';
 class CanvasObject {
 
 	constructor () {
-		this.originPoint = {
-			x: 0,
-			y: 0
-		};
+
+		// this.originPoint = {
+		// 	x: 0,
+		// 	y: 0
+		// };
 
 		this.width = 0;
 		this.height = 0;
@@ -208,7 +209,10 @@ class CanvasObject {
 
 			const alpha = Math.atan( this.height / this.width);
 
-			this.rotation = _getDeltaAngle(centerPoint, this.mousePos, pos) * 180 / Math.PI;
+			console.log(centerPoint, this.mousePos, pos);
+			this.rotation += _getDeltaAngle(centerPoint, this.mousePos, pos) * 180 / Math.PI;
+			this.mousePos = pos;
+			console.log(this.rotation);
 
 			const ratio = this.width / this.height;
 			this.width = _toScaler(pos, centerPoint) * 2 * Math.cos(alpha);
@@ -352,7 +356,7 @@ class CanvasObject {
 			imageUrl : this.img.src,
 			rotation: this.rotation,
 			flipped: this.flipped,
-			width: this.width,
+			width: this.width ,
 			height: this.height,
 			originPoint: this.originPoint,
 
@@ -361,7 +365,7 @@ class CanvasObject {
 
 
 
-	getBoundRect() {
+	getBoundRect(scale) {
 
 		const points = [this.getLeftBottomCorner(),
 			this.getRightTopCorner(),

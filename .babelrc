@@ -1,8 +1,9 @@
 {
   "presets": [
+    "stage-0",
     [
-
-      "env",  {
+      "env",
+      {
       "targets": {
         "browsers": [
           "last 2 versions",

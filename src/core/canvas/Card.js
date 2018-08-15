@@ -3,23 +3,25 @@ import { roundRect, isInside, allInside, doPolygonsIntersect } from './canvas-he
 import { CANVAS_ACTIONS } from './canvasActionTypes';
 
 class Card extends CanvasObject {
-	constructor (options = {}) {
+	constructor (ctx, options = {}) {
 		super();
+		this.ctx = ctx;
 
 		this.layerType = 'StockImageLayer';
 
 		this.template = options.templateArea;
+
+
+		//origin point center of image  relates to center of template (center of canvas)
 		this.originPoint = {
-			x: options.templateArea.x +  options.templateArea.width / 2,
-			y: options.templateArea.y +  options.templateArea.height / 2
+			x: 0,
+			y: 0
 		};
-		console.log(this.template);
 		this.imageOpacity = options.imageOpacity || 0.4;
 		this.action = CANVAS_ACTIONS.NOTHING;
 
 		this.width = this.template.width + 40;
 		this.height = this.template.height + 40;
-		this.preview = options.preview;
 
 		const templateImage = new Image();
 		templateImage.crossOrigin = 'Anonymous';
@@ -35,42 +37,6 @@ class Card extends CanvasObject {
 		this.rotation = 0;
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
 
-
-		if (options.config) {
-
-			console.log(options.config);
-			console.log(this.template);
-
-			const ratio = options.config.template.width / options.config.template.height;
-			const offsetX = options.config.template.x;
-			const offsetY = options.config.template.y;
-
-			const previewScaleX =  this.template.width / options.config.template.width;
-			const previewScaleY =  this.template.height / options.config.template.height;
-
-			this.width = options.config.width * previewScaleX;
-			this.height = options.config.height * previewScaleY;
-
-
-
-
-			this.flip = options.config.flip;
-			this.rotation = options.config.rotation;
-			this.originPoint = {
-				x: (options.config.originPoint.x  - offsetX) * previewScaleX,
-				y: (options.config.originPoint.y  - offsetY) * previewScaleY,
-			};
-
-			this.img = options.config.image;
-			this.imageLoaded = true;
-
-			this.template.image = options.config.template.image;
-			this.template.loaded = options.config.template.loaded;
-
-
-		}
-
-
 		if (options.imageUrl) {
 			this.setImage(options.imageUrl);
 		}
@@ -84,6 +50,10 @@ class Card extends CanvasObject {
 		this.img.src = url;
 		this.img.onload = () => {
 			this.imageLoaded = true;
+			this.originPoint = {
+				x: 0,
+				y: 0
+			}
 		};
 	}
 
@@ -92,8 +62,15 @@ class Card extends CanvasObject {
 			return;
 		}
 
+		const canvasCenter = {
+			x: ctx.canvas.width /2,
+			y: ctx.canvas.height /2
+		};
+
+
 		ctx.save();
-		ctx.translate(this.originPoint.x, this.originPoint.y);
+		ctx.translate(this.originPoint.x + canvasCenter.x, this.originPoint.y + canvasCenter.y);
+
 		if (this.rotation !== 0) {
 			ctx.rotate(this.rotation * Math.PI / 180);
 		}
@@ -106,7 +83,7 @@ class Card extends CanvasObject {
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
 		ctx.globalAlpha = 1;
 
-		if (this.selected && !this.locked && !this.preview) {
+		if (this.selected && !this.locked) {
 			// draw border
 			ctx.strokeStyle = this.borderColor;
 			roundRect(ctx, -this.width / 2, -this.height / 2, this.width, this.height, 2);
@@ -144,12 +121,13 @@ class Card extends CanvasObject {
 		ctx.restore();
 		ctx.save();
 
+
 		ctx.beginPath();
 
-		roundRect(ctx, this.template.x, this.template.y, this.template.width, this.template.height);
+		roundRect(ctx, canvasCenter.x - this.template.width /2, canvasCenter.y - this.template.height /2, this.template.width, this.template.height);
 		ctx.clip();
 
-		ctx.translate(this.originPoint.x, this.originPoint.y);
+		ctx.translate(canvasCenter.x + this.originPoint.x , canvasCenter.y + this.originPoint.y);
 
 		if (this.rotation !== 0) {
 			ctx.rotate(this.rotation * Math.PI / 180);
@@ -159,12 +137,14 @@ class Card extends CanvasObject {
 			ctx.scale(-1, 1);
 		}
 
+
 		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
+
 
 		ctx.restore();
 
-		ctx.drawImage(this.template.image, this.template.x, this.template.y, this.template.width, this.template.height);
 
+		ctx.drawImage(this.template.image, canvasCenter.x - this.template.width /2, canvasCenter.y - this.template.height /2, this.template.width, this.template.height);
 
 		// ctx.beginPath();
 		// ctx.fillStyle= '#000';
@@ -173,40 +153,35 @@ class Card extends CanvasObject {
 
 	}
 
-
 	testCoverage () {
 
 		const bleedBox = {
-			top: this.template.y,
-			left: this.template.x,
-			right: this.template.x + this.template.width,
-			bottom: this.template.y + this.template.height
+			top: - this.template.height /2,
+			left:  - this.template.width /2,
+			right: this.template.width /2,
+			bottom: this.template.height /2
 		};
-
 		const vertices = [this.getLeftTopCorner(), this.getRightTopCorner(), this.getRightBottomCorner(), this.getLeftBottomCorner()];
-
 
 		const r1 = allInside();
 		const r2 = noOverlap();
 		const r3 = linesIntersect();
 
-
 		this.errorCoverage = r1 || r2 || r3;
-
 		return this.errorCoverage;
 
 		function linesIntersect () {
-			var imageLines = verticesToLines(vertices);
+			const imageLines = verticesToLines(vertices);
 
-			var templateLines = verticesToLines([
+			const templateLines = verticesToLines([
 				{x: Math.round(bleedBox.left), y: Math.round(bleedBox.bottom)},
 				{x: Math.round(bleedBox.left), y: Math.round(bleedBox.top)},
 				{x: Math.round(bleedBox.right), y: Math.round(bleedBox.top)},
 				{x: Math.round(bleedBox.right), y: Math.round(bleedBox.bottom)}
 			]);
 
-			for (var i = 0; i < imageLines.length; i++) {
-				for (var j = 0; j < templateLines.length; j++) {
+			for (let i = 0; i < imageLines.length; i++) {
+				for (let j = 0; j < templateLines.length; j++) {
 					if (lineIntersect(imageLines[i].p1.x,
 						imageLines[i].p1.y,
 						imageLines[i].p2.x,
@@ -215,7 +190,7 @@ class Card extends CanvasObject {
 						templateLines[j].p1.y,
 						templateLines[j].p2.x,
 						templateLines[j].p2.y
-						)
+					)
 					) {
 						return true;
 					}
@@ -267,10 +242,10 @@ class Card extends CanvasObject {
 		}
 
 		function verticesToLines (vertices) {
-			var lines = [];
+			const lines = [];
 
-			for (var i = 0; i < vertices.length; i++) {
-				var next = i + 1;
+			for (let i = 0; i < vertices.length; i++) {
+				let next = i + 1;
 				if (next === vertices.length) { next = 0; }
 				lines.push({p1: vertices[i], p2: vertices[next]});
 			}
@@ -278,32 +253,31 @@ class Card extends CanvasObject {
 			return lines;
 		}
 
-
-		function lineIntersect(x1,y1,x2,y2, x3,y3,x4,y4) {
-			var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-			var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-			if (isNaN(x)||isNaN(y)) {
+		function lineIntersect (x1, y1, x2, y2, x3, y3, x4, y4) {
+			const x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+			const y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+			if (isNaN(x) || isNaN(y)) {
 				return false;
 			} else {
-				if (x1>=x2) {
-					if (!(x2<=x&&x<=x1)) {return false;}
+				if (x1 >= x2) {
+					if (!(x2 <= x && x <= x1)) {return false;}
 				} else {
-					if (!(x1<=x&&x<=x2)) {return false;}
+					if (!(x1 <= x && x <= x2)) {return false;}
 				}
-				if (y1>=y2) {
-					if (!(y2<=y&&y<=y1)) {return false;}
+				if (y1 >= y2) {
+					if (!(y2 <= y && y <= y1)) {return false;}
 				} else {
-					if (!(y1<=y&&y<=y2)) {return false;}
+					if (!(y1 <= y && y <= y2)) {return false;}
 				}
-				if (x3>=x4) {
-					if (!(x4<=x&&x<=x3)) {return false;}
+				if (x3 >= x4) {
+					if (!(x4 <= x && x <= x3)) {return false;}
 				} else {
-					if (!(x3<=x&&x<=x4)) {return false;}
+					if (!(x3 <= x && x <= x4)) {return false;}
 				}
-				if (y3>=y4) {
-					if (!(y4<=y&&y<=y3)) {return false;}
+				if (y3 >= y4) {
+					if (!(y4 <= y && y <= y3)) {return false;}
 				} else {
-					if (!(y3<=y&&y<=y4)) {return false;}
+					if (!(y3 <= y && y <= y4)) {return false;}
 				}
 			}
 			return true;
@@ -311,9 +285,7 @@ class Card extends CanvasObject {
 
 	}
 
-
-
-	getConfiguration() {
+	getConfiguration () {
 		const config = super.getConfiguration();
 		config.template = this.template;
 		config.image = this.img;
@@ -321,8 +293,80 @@ class Card extends CanvasObject {
 		return config;
 	}
 
+	handleResize (scale) {
+
+		const newTemplateWidth = this.template.width * scale;
+		const newTemplateHeight = this.template.height * scale;
+
+		// this.template.x *= scale;
+		// this.template.y *= scale;
+		this.template.width = newTemplateWidth;
+		this.template.height = newTemplateHeight;
+
+		const cardRatio = this.width / this.height;
+		const newWidth = this.width * scale;
+		const newHeight = newWidth / cardRatio;
+
+		this.originPoint = {
+			x: this.originPoint.x * scale,
+			y: this.originPoint.y * scale
+		};
+
+		this.width = newWidth;
+		this.height = newHeight;
+
+	}
 
 
+	static preview(cardObject, ctx) {
+		console.log(cardObject, ctx);
+
+		const {width, height} = ctx.canvas;
+
+		const canvasCenter = {
+			x: width /2,
+			y: height /2
+		};
+
+		const scaleX = width / cardObject.template.width;
+		const scaleY = height / cardObject.template.height;
+
+
+		// clone card object
+		const card = {
+			img : cardObject.img,
+			width: cardObject.width * scaleX,
+			height: cardObject.height * scaleY,
+			rotation: cardObject.rotation,
+			flipped: cardObject.flipped,
+			originPoint: cardObject.originPoint
+		};
+
+		const template = {
+			width,
+			height,
+			img: cardObject.template.image
+		};
+
+		ctx.save();
+		ctx.translate(card.originPoint.x + canvasCenter.x, card.originPoint.y + canvasCenter.y);
+
+		if (card.rotation !== 0) {
+			ctx.rotate(card.rotation * Math.PI / 180);
+		}
+		if (card.flipped) {
+			ctx.scale(-1, 1);
+		}
+
+
+		ctx.drawImage(card.img, -card.width / 2, -card.height / 2, card.width, card.height);
+
+
+		ctx.restore();
+
+		ctx.drawImage(template.img, canvasCenter.x - template.width /2, canvasCenter.y - template.height /2, template.width, template.height);
+
+	}
 
 }
 

@@ -4,16 +4,22 @@ import { roundRect, allInside } from './canvas-helper';
 import RedCros from '../../img/red-cross.png';
 
 
-class CardItem  extends CanvasObject{
-	constructor(id, url, options = {}) {
+class TextItem  extends CanvasObject{
+	constructor(id, text, ctx, options = {}) {
 		super();
 
 
 
 		this.coverageArea = options.coverageArea;
 		this.templateArea = options.templateArea;
-		this.layerType = 'StockImageLayer';
+		this.layerType = 'TextLayer';
 
+
+		this.fontStyle = options.fontStyle || {
+			name: 'Comic Sans MS',
+			height: 30,
+			color: 'red'
+		};
 
 		this.id = id;
 
@@ -51,19 +57,6 @@ class CardItem  extends CanvasObject{
 
 			}
 
-			// const ratio = options.config.template.width / options.config.template.height;
-			// const offsetX = options.config.template.x;
-			// const offsetY = options.config.template.y;
-			//
-			// const previewScaleX =  this.template.width / options.config.template.width;
-			// const previewScaleY =  this.template.height / options.config.template.height;
-			//
-			// this.width = options.config.width * previewScaleX;
-			// this.height = options.config.height * previewScaleY;
-
-
-
-
 			this.flip = options.config.flip;
 			this.rotation = options.config.rotation;
 
@@ -75,7 +68,7 @@ class CardItem  extends CanvasObject{
 
 		} else {
 			this.width = options.width || 50;
-			this.height = options.height = 50;
+			this.height = options.height || 50;
 
 			this.originPoint = options.initialPosition || {
 				x: this.coverageArea.x + this.width /2 + bleeding,
@@ -84,11 +77,10 @@ class CardItem  extends CanvasObject{
 			this.selected = true;
 			this.rotation = 0;
 
-			this.setImage(url);
+			this.setText(text);
 			this.testCoverage();
 
 		}
-
 
 
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
@@ -96,28 +88,60 @@ class CardItem  extends CanvasObject{
 		this.removed = false;
 
 
-
-
 		this.removedIcon = new Image();
 		this.removedIcon.src = RedCros;
 		this.removedIcon.onload = () => {
 			this.removedIconLoaded = true;
-		}
+		};
+
+
+
+		this.width = options.width || options.coverageArea.width;
+		this.adjustFontHeightToWidth(this.width, ctx);
+
+		// this.setCanvasFont(ctx);
+		// const width = ctx.measureText(this.text).width;
+		// console.log(width);
+		// this.width = width;
+		// this.testCoverage();
 	}
 
-	setImage (url) {
-		this.img = new Image();
-		this.img.crossOrigin = 'Anonymous';
-		this.img.src = url;
-		this.img.onload = () => {
-			this.imageLoaded = true;
-			this.selected = true;
-		};
+
+	setCanvasFont(ctx, fontStyle) {
+		const {height, name, color} = fontStyle;
+		ctx.font = `${height}px ${name}`;
+		ctx.fillStyle = color;
+		ctx.textAlign = "center";
+
+	}
+
+	adjustFontHeightToWidth(width, ctx) {
+
+		for( let  height = this.fontStyle.height; height > 0; height -= 0.1) {
+			const fontStyle = {
+				name: this.fontStyle.name,
+				height
+			};
+			this.setCanvasFont(ctx, fontStyle);
+			const textWidth = ctx.measureText(this.text).width;
+			console.log('textWidth', textWidth);
+			if (textWidth <= width) {
+				this.fontStyle.height = height;
+				console.log('width', width);
+				break;
+			}
+		}
+
+	}
+
+
+	setText (text) {
+		this.text = text;
 	}
 
 
 	render(ctx) {
-		if (!this.imageLoaded) {
+		if (!this.text) {
 			return;
 		}
 
@@ -176,9 +200,12 @@ class CardItem  extends CanvasObject{
 			ctx.scale(-1, 1);
 		}
 
-		ctx.drawImage(this.img, -this.width / 2, -this.height / 2, this.width, this.height);
-		ctx.restore();
 
+		this.setCanvasFont(ctx, this.fontStyle);
+		ctx.fillText(this.text,  0, (this.height  - this.fontStyle.height) / 2);
+
+
+		ctx.restore();
 
 
 
@@ -207,47 +234,6 @@ class CardItem  extends CanvasObject{
 
 
 		}
-
-
-		// if (this.removed) {
-		// 	ctx.save();
-		// 	ctx.translate(this.originPoint.x, this.originPoint.y);
-		//
-		// 	if (this.rotation !== 0) {
-		// 		ctx.rotate(this.rotation * Math.PI / 180);
-		// 	}
-		//
-		// 	ctx.beginPath();
-		// 	//ctx.fillStyle = 'rgba(255,0,0, .9)';
-		// 	ctx.fillStyle = 'rgba(200,200,200, 1)';
-		// 	ctx.lineWidth = 2;
-		//
-		// 	// ctx.moveTo( - this.width /2, -this.height /2);
-		// 	// ctx.lineTo( this.width /2, this.height /2);
-		// 	//
-		// 	// ctx.moveTo( - this.width /2, this.height /2);
-		// 	// ctx.lineTo( this.width /2, -this.height /2);
-		//
-		// 	ctx.arc(-this.width /2 , -this.height/2 , 10, 0, 2 * Math.PI);
-		// 	ctx.fill();
-		//
-		// 	ctx.beginPath();
-		// 	ctx.strokeStyle = 'rgba(0,0,0, 1)';
-		//
-		// 	const x =  - this.width /2;
-		// 	const y = - this.height /2;
-		//
-		// 	ctx.moveTo(  x - 4, y -4);
-		// 	ctx.lineTo(  x + 4, y + 4);
-		//
-		//
-		// 	ctx.moveTo(  x + 4, y - 4);
-		// 	ctx.lineTo(  x - 4, y + 4);
-		//
-		//
-		// 	ctx.stroke();
-		// 	ctx.restore();
-		// }
 
 	}
 
@@ -294,5 +280,24 @@ class CardItem  extends CanvasObject{
 	}
 
 
+	handleResize(scale) {
+		const ratio = this.width / this.height;
+		this.width *= scale;
+		this.height = this.width / ratio;
+
+		this.originPoint = {
+			x : this.originPoint.x * scale,
+			y : this.originPoint.y * scale
+		};
+
+
+		this.coverageArea.x  *= scale;
+		this.coverageArea.y  *= scale;
+		this.coverageArea.width *= scale;
+		this.coverageArea.height *= scale;
+
+	}
+
+
 }
-export default CardItem;
+export default TextItem;

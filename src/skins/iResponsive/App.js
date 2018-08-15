@@ -109,8 +109,8 @@ class App {
 
 
 	handleResize() {
-		const {width, height} = this.rootElement.getBoundingClientRect();
-		console.log('Resize', width, height);
+		// const {width, height} = this.rootElement.getBoundingClientRect();
+		// console.log('Resize', width, height);
 
 	}
 	
