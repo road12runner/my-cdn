@@ -181,62 +181,8 @@ class Designer {
 
 
 	submit() {
+		this.canvas.submit();
 
-
-		const layers = [this.canvas.card, ...this.canvas.items];
-
-		let count = 0;
-		const cardLayers =[];
-
-		const template = this.canvas.card.template;
-		console.log(template);
-
-		const canvasScale = this.canvas.getScale();
-		console.log('canvasScale', canvasScale);
-
-		layers.forEach( (layer, i) => {
-
-			api.submitLayer(AppSettings.handoverKey, layer.layerType).then( layerConfig => {
-				console.log(layerConfig);
-				count++;
-
-				const layerCoords = layer.getBoundRect(canvasScale);
-				layerConfig.Configuration.Left = Math.floor( (layerCoords.left - template.x) / canvasScale);
-				layerConfig.Configuration.Top = Math.floor( (layerCoords.top - template.y) / canvasScale);
-				layerConfig.Configuration.Right = Math.floor((layerCoords.right - template.x) / canvasScale);
-				layerConfig.Configuration.Bottom = Math.floor(  (layerCoords.bottom - template.y) / canvasScale);
-				layerConfig.Configuration.Rotation = Math.floor(layer.rotation);
-				layerConfig.Configuration.Flip = layer.flipped ? 1: 0;
-
-
-				layerConfig.ImageId = layer.id;
-				layerConfig.Order = i;
-
-				cardLayers.push(layerConfig);
-
-				//weird way to wait for all card layer submission
-				if (count === layers.length ) {
-					console.log('perform  submit request', layerConfig);
-					submitCard(cardLayers);
-				}
-			});
-
-		});
-
-
-
-
-
-
-		function submitCard(layers = []) {
-
-			const data = AppSettings.client;
-			data.Layers = layers;
-
-			api.submitCard(AppSettings.handoverKey, AppSettings.clientId, data).then( res => {
-				console.log('submit response', res);
-			})
-		}
 	}
 
 	

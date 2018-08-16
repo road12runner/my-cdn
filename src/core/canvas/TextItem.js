@@ -24,63 +24,19 @@ class TextItem  extends CanvasObject{
 		this.id = id;
 
 		const bleeding = options.bleeding || 5;
+		
+		this.width = options.width || options.coverageArea.width;
+		this.height = options.height || this.fontStyle.height || options.coverageArea.height;
 
-		if (options.config) {
+		this.originPoint = options.initialPosition || {
+			x: this.coverageArea.x + this.width /2,
+			y: this.coverageArea.y + this.height /2,
+		} ;
+		this.selected = true;
+		this.rotation = 0;
 
-
-			if (options.preview) {
-				// adjust size and position for preview
-
-				// get scale
-				const previewScaleX = options.templateArea.width / options.config.cardTemplateArea.width;
-				const previewScaleY = options.templateArea.height / options.config.cardTemplateArea.height;
-				const offsetX = options.config.cardTemplateArea.x;
-				const offsetY = options.config.cardTemplateArea.y;
-
-
-				this.originPoint = {
-					x: (options.config.originPoint.x  - offsetX) * previewScaleX,
-					y: (options.config.originPoint.y  - offsetY) * previewScaleY,
-				};
-
-				this.width = options.config.width * previewScaleX;
-				this.height = options.config.height * previewScaleY;
-
-
-			} else {
-
-				this.originPoint = options.config.originPoint;
-				this.width = options.config.width;
-				this.height = options.config.height;
-
-				this.testCoverage();
-
-			}
-
-			this.flip = options.config.flip;
-			this.rotation = options.config.rotation;
-
-
-			this.img =  options.config.image;
-			this.imageLoaded = true;
-			//this.setImage(options.config.imageUrl);
-
-
-		} else {
-			this.width = options.width || 50;
-			this.height = options.height || 50;
-
-			this.originPoint = options.initialPosition || {
-				x: this.coverageArea.x + this.width /2 + bleeding,
-				y: this.coverageArea.y + this.height /2 + bleeding,
-			} ;
-			this.selected = true;
-			this.rotation = 0;
-
-			this.setText(text);
-			this.testCoverage();
-
-		}
+		this.setText(text);
+		this.testCoverage();
 
 
 		this.borderColor = options.borderColor || 'rgb(49, 183, 219)';
@@ -96,14 +52,9 @@ class TextItem  extends CanvasObject{
 
 
 
-		this.width = options.width || options.coverageArea.width;
 		this.adjustFontHeightToWidth(this.width, ctx);
 
-		// this.setCanvasFont(ctx);
-		// const width = ctx.measureText(this.text).width;
-		// console.log(width);
-		// this.width = width;
-		// this.testCoverage();
+	
 	}
 
 
@@ -144,24 +95,34 @@ class TextItem  extends CanvasObject{
 		if (!this.text) {
 			return;
 		}
-
+		
+		const {width, height} = ctx.canvas;
+		
+		const canvasCenter = {
+			x: width /2,
+			y: height /2
+		};
+		
 		// show item coverage area
 		if (this.selected) {
+			ctx.save();
+			ctx.translate(canvasCenter.x, canvasCenter.y);
 			roundRect(ctx, this.coverageArea.x, this.coverageArea.y, this.coverageArea.width, this.coverageArea.height, 2);
+			ctx.restore();
 		}
-
+		
 		ctx.save();
-		ctx.translate(this.originPoint.x, this.originPoint.y);
+		ctx.translate(this.originPoint.x + canvasCenter.x, this.originPoint.y + canvasCenter.y);
 		if (this.rotation !== 0) {
 			ctx.rotate(this.rotation * Math.PI / 180);
 		}
-
-		if (this.selected && !this.preview) {
+		
+		if (this.selected) {
 			ctx.strokeStyle = this.borderColor;
-
+			
 			// show coverage area
 			roundRect(ctx, -this.width / 2, -this.height / 2, this.width, this.height, 2);
-
+			
 			// show border of item
 			// draw left top corner
 			ctx.beginPath();
@@ -169,72 +130,65 @@ class TextItem  extends CanvasObject{
 			ctx.fillStyle = this.hoverCorners.leftTop ? this.borderColor : 'white';
 			ctx.fill();
 			ctx.stroke();
-
+			
 			// draw right top corner
 			ctx.beginPath();
 			ctx.arc(this.width / 2, -this.height / 2, 5, 0, 2 * Math.PI);
 			ctx.fillStyle = this.hoverCorners.rightTop ? this.borderColor : 'white';
 			ctx.fill();
 			ctx.stroke();
-
+			
 			//draw left bottom corner
 			ctx.beginPath();
 			ctx.fillStyle = this.hoverCorners.leftBottom ? this.borderColor : 'white';
 			ctx.arc(-this.width / 2, this.height / 2, 5, 0, 2 * Math.PI);
 			ctx.fill();
 			ctx.stroke();
-
+			
 			//draw right bottom corner
 			ctx.beginPath();
 			ctx.arc(this.width / 2, this.height / 2, 5, 0, 2 * Math.PI);
 			ctx.fillStyle = this.hoverCorners.rightBottom ? this.borderColor : 'white';
 			ctx.fill();
 			ctx.stroke();
-
-
+			
+			
 		}
-
-
-
-		if (this.flipped) {
-			ctx.scale(-1, 1);
-		}
-
-
+		
+		
 		this.setCanvasFont(ctx, this.fontStyle);
 		ctx.fillText(this.text,  0, (this.height  - this.fontStyle.height) / 2);
-
-
+		
+		
 		ctx.restore();
-
-
-
+		
+		
 		if (this.removed ) {
-
+			
 			if (this.removedIconLoaded) {
 				ctx.save();
-
+				
 				const {x, y} = this.originPoint;
-				ctx.translate( x, y);
+				ctx.translate( x + canvasCenter.x, y + canvasCenter.y);
 				if (this.rotation !== 0) {
 					ctx.rotate(this.rotation * Math.PI / 180);
 				}
-
+				
 				ctx.fillStyle = 'rgba(200,200,200, 1)';
 				ctx.arc(-this.width /2 , -this.height/2 , 10, 0, 2 * Math.PI);
 				ctx.fill();
-
-
-
+				
+				
+				
 				ctx.drawImage(this.removedIcon,  -this.width /2 - 5 ,  -this.height /2 - 5,   10,  10);
-
+				
 				ctx.restore();
 			}
-
-
-
+			
+			
+			
 		}
-
+		
 	}
 
 

@@ -25,6 +25,7 @@ class CanvasObject {
 
 
 		this.errorCoverage = false;
+		this.action = CANVAS_ACTIONS.NOTHING;
 
 	}
 

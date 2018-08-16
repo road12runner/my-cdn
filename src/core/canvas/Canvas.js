@@ -6,6 +6,7 @@ import AppSettings from '../AppSettings';
 
 import { getEventPosition } from './canvas-helper';
 import Hammer from 'hammerjs';
+import * as api from "../net/api";
 
 class Canvas {
 
@@ -20,27 +21,17 @@ class Canvas {
 
 		this.ctx = this.canvas.getContext('2d');
 
-		if (options.preview) {
-			// get template image size
-			const {width, height} = options.config.card.template.image;
-			console.log(width, height);
-			this.canvas.setAttribute('width', `${width}`);
-			this.canvas.setAttribute('height', `${height}`);
-
-		} else {
-
-			let {width, height} = options;
-			if (!width || !height) {
-				const rect = this.canvas.getBoundingClientRect();
-				width = rect.width;
-				height = rect.height;
-			}
-
-			this.canvas.setAttribute('width', `${width}`);
-			this.canvas.setAttribute('height', `${height}`);
-			this.canvas.width = width;
-			this.canvas.height = height;
+		let {width, height} = options;
+		if (!width || !height) {
+			const rect = this.canvas.getBoundingClientRect();
+			width = rect.width;
+			height = rect.height;
 		}
+
+		this.canvas.setAttribute('width', `${width}`);
+		this.canvas.setAttribute('height', `${height}`);
+		this.canvas.width = width;
+		this.canvas.height = height;
 
 		if (options.margin) {
 			this.margin = options.margin;
@@ -50,108 +41,89 @@ class Canvas {
 			window.addEventListener('resize', () => this.handleResize());
 		}
 
-		this.preview = options.preview;
-
 		this.handleCardCoverage = options.onCardCoverage || function () {};
 
-		let templateWidth = (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241;
-		let templateHeight = (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153;
-
-		this.originalTemplateSize = {
-			width: templateWidth,
-			height: templateHeight
+		
+		this.template = {
+			width: (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241,
+			height: (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153,
+			initialSize :{
+				width: (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241,
+				height: (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153,
+			}
 		};
+		
+		
 
+		// scale template size
 		if (options.scale) {
 			this.scale = options.scale;
-			const ratio = templateWidth / templateHeight;
-			templateWidth *= options.scale;
-			templateHeight = templateWidth / ratio;
-		} else if (this.margin) {
-
-			const ratio = templateWidth / templateHeight;
-			templateWidth = this.canvas.width - (2 * this.margin);
-			templateHeight = Math.floor(templateWidth / ratio);
-			console.log('canvas size', templateWidth, templateHeight);
-			console.log(this.canvas.getBoundingClientRect());
-			this.scale = templateWidth / this.originalTemplateSize.width;
-
-		} else {
-			this.scale = 1;
+			const ratio = this.template.width / this.template.height;
+			this.template.width  *= options.scale;
+			this.template.height = this.template.width / ratio;
+		} else if (this.margin) { // or put margins
+			
+			const ratio = this.template.width / this.template.height;
+			this.template.width  = this.canvas.width - (2 * this.margin);
+			this.template.height = Math.floor(this.template.width / ratio);
 		}
 
 		this.items = [];
 
-		if (options.preview) {
-			//fit template area to whole available size
-			console.log('config', options.config);
+		const canvasCenter = {
+			x: this.canvas.width / 2,
+			y: this.canvas.height / 2
+		};
 
-			this.templateArea = {
-				x: 0,
-				y: 0,
-				width: this.canvas.width,
-				height: this.canvas.height,
-			};
-		} else {
-
-			const canvasCenter = {
-				x: this.canvas.width / 2,
-				y: this.canvas.height / 2
-			};
-
-			this.templateArea = {
-				x: canvasCenter.x - templateWidth / 2,
-				y: canvasCenter.y - templateHeight / 2,
-				width: templateWidth,
-				height: templateHeight,
-			};
-
-		}
+		
 
 		this.card = new Card(this.ctx, {
-			templateArea: this.templateArea,
-			templateUrl: AppSettings.designerSettings.DesignTemplate.UrlLarge,
-			preview: options.preview,
-			config: options.config ? options.config.card : null,
+			coverageArea: {
+				x: canvasCenter.x - this.template.width / 2,
+				y: canvasCenter.y - this.template.height / 2,
+				width: this.template.width,
+				height: this.template.height,
+			},
+			image : {
+				id: options.imageId,
+				url: options.imageUrl
+			}
 		});
 
-		if (options.config && options.config.items.length > 0) {
-			console.log('add items', options.config.items);
 
-			this.items = options.config.items.map(i => {
-				i.cardTemplateArea = options.config.card.template;
-				return new ImageItem(i.id, i.imageUrl, {preview: true, config: i, templateArea: this.templateArea});
-			});
-
-		}
-
-		if (!options.preview) {
-			if (options.touchDevice) {
-				this.setTouchEvents();
-			} else {
-				// mouse events
-				this.canvas.addEventListener('mousedown', e => this.startEvent(e));
-				this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
-				this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
-			}
-
-			// drag drop events
-			this.canvas.addEventListener('dragover', e => this.dragOver(e));
-			this.canvas.addEventListener('drop', e => this.drop(e));
-
-			window.requestAnimationFrame(() => this.drawCard());
+		if (options.touchDevice) {
+			this.setTouchEvents();
 		} else {
-			this.drawCard();
+			// mouse events
+			this.canvas.addEventListener('mousedown', e => this.startEvent(e));
+			this.canvas.addEventListener('mousemove', e => this.keepEvent(e));
+			this.canvas.addEventListener('mouseup', e => this.finishEvent(e));
 		}
 
-		if (options.imageId && options.imageUrl) {
-			this.setImage(options.imageId, options.imageUrl);
-		}
+		// drag drop events
+		this.canvas.addEventListener('dragover', e => this.dragOver(e));
+		this.canvas.addEventListener('drop', e => this.drop(e));
+
+		window.requestAnimationFrame(() => this.drawCard());
+
+		// if (options.imageId && options.imageUrl) {
+		// 	this.setImage(options.imageId, options.imageUrl);
+		// }
 
 		this.testCardCoverageResult = false;
 
+		// load template image
+		const img = new Image();
+		img.crossOrigin = 'Anonymous';
+		img.src = AppSettings.designerSettings.DesignTemplate.UrlLarge;
+		img.onload = () => {
+			this.template.image = img;
+		}
+		
+
 	}
 
+	// define touch events
 	setTouchEvents () {
 		const mc = new Hammer.Manager(this.canvas);
 		// create a pinch and rotate recognizer
@@ -219,15 +191,30 @@ class Canvas {
 
 	}
 
+	
+	// render images on canvas
 	drawCard () {
-
-		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-		this.card.render(this.ctx);
-		this.items.forEach(item => item.render(this.ctx));
-
-		if (!this.preview) {
-			window.requestAnimationFrame(() => this.drawCard());
+		
+		window.requestAnimationFrame(() => this.drawCard());
+		
+		
+		if (!this.template.image) {
+			return;
 		}
+		
+		//clear canvas
+		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+		
+		// render card image
+		this.card.render(this.ctx);
+		
+		//render other items (clipart, text, etc)
+		this.items.forEach(item => item.render(this.ctx));
+		
+		//render template
+		const x = this.canvas.width /2 - this.template.width /2;
+		const y = this.canvas.height /2 - this.template.height /2;
+		this.ctx.drawImage(this.template.image, x, y, this.template.width, this.template.height);
 
 	}
 
@@ -398,14 +385,27 @@ class Canvas {
 		this.items.forEach(item => item.selected = false);
 
 		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
-
+		
+		const canvasCenter = {
+			x: this.canvas.width / 2,
+			y: this.canvas.height / 2
+		};
+		
+		const templateArea = {
+			width: this.card.width,
+			height: this.card.height,
+			x: -this.card.template.width / 2,
+			y: -this.card.template.height / 2
+		};
+		
 		const coverageArea = {
-			x: (this.card.template.x + itemArea.Left * canvasScale),
-			y: (this.card.template.y + itemArea.Top * canvasScale),
+			x: (templateArea.x + itemArea.Left * canvasScale),
+			y: (templateArea.y + itemArea.Top * canvasScale),
 			width: ((itemArea.Right - itemArea.Left) * canvasScale),
 			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
 		};
-
+		
+		
 		const cardItem = new TextItem('test', 'Hello World', this.ctx, {
 			coverageArea,
 			templateArea: this.templateArea,
@@ -470,6 +470,7 @@ class Canvas {
 
 	}
 
+	// create snapshot of the canvas as as png image
 	static getPreviewImage (canvasObject, width, height) {
 		console.log(canvasObject, width, height);
 
@@ -489,6 +490,99 @@ class Canvas {
 		//TODO remove previewCanvas ????
 		return previewCanvas.toDataURL();
 	}
+	
+	// submit canvas to the PCS
+	submit() {
+		
+		
+		// flat all layers
+		const layers = [this.card, ...this.items];
+		
+		let count = 0;
+		const cardLayers =[];
+		
+		const template = this.card.template;
+		console.log(template);
+		
+		const canvasScale = this.getScale();
+		console.log('canvasScale', canvasScale);
+		
+		const canvasCenter = {
+			x: this.canvas.width /2,
+			y: this.canvas.height /2
+		};
+		
+		const templateLetTopCorner = {
+			x: (canvasCenter.x - this.card.template.width /2) / canvasScale,
+			y: (canvasCenter.y - this.card.template.height /2) /canvasScale
+		};
+		
+		
+		layers.forEach( (layer, i) => {
+			
+			api.submitLayer(AppSettings.handoverKey, layer.layerType).then( layerConfig => {
+				console.log(layerConfig);
+				count++;
+				
+				// get scaled layer coordinates
+				const layerCoords = layer.getBoundRect();
+				const layerWidth = (layerCoords.right - layerCoords.left) /canvasScale;
+				const layerHeight = (layerCoords.bottom - layerCoords.top) / canvasScale;
+				const layerLeftTopCorner = {
+					x: (layerCoords.left + canvasCenter.x) /canvasScale - templateLetTopCorner.x,
+					y: (layerCoords.top + canvasCenter.y) / canvasScale - templateLetTopCorner.y
+				};
+				
+				const config = {
+					Left: Math.floor(layerLeftTopCorner.x),
+					Top: Math.floor(layerLeftTopCorner.y),
+					Right: Math.floor(layerLeftTopCorner.x + layerWidth),
+					Bottom: Math.floor(layerLeftTopCorner.y + layerHeight),
+					Rotation: Math.floor(layer.rotation),
+					Flip: layer.flipped ? 1: 0
+					
+				};
+				
+				// layerConfig.Configuration.Left = Math.floor( (layerCoords.left - template.x) / canvasScale);
+				// layerConfig.Configuration.Top = Math.floor( (layerCoords.top - template.y) / canvasScale);
+				// layerConfig.Configuration.Right = Math.floor((layerCoords.right - template.x) / canvasScale);
+				// layerConfig.Configuration.Bottom = Math.floor(  (layerCoords.bottom - template.y) / canvasScale);
+				// layerConfig.Configuration.Rotation = Math.floor(layer.rotation);
+				// layerConfig.Configuration.Flip = layer.flipped ? 1: 0;
+				
+				layerConfig.Configuration = config;
+				layerConfig.ImageId = layer.id;
+				layerConfig.Order = i;
+				
+				cardLayers.push(layerConfig);
+				
+				//weird way to wait for all card layers submission
+				if (count === layers.length ) {
+					console.log('perform  submit request', layerConfig);
+					submitCard(cardLayers);
+				}
+			});
+			
+		});
+		
+		
+		
+		
+		
+		
+		function submitCard(layers = []) {
+			
+			const data = AppSettings.client;
+			data.Layers = layers;
+			
+			api.submitCard(AppSettings.handoverKey, AppSettings.clientId, data).then( res => {
+				console.log('submit response', res);
+			})
+		}
+		
+	}
+	
+	
 
 }
 
