@@ -123,6 +123,10 @@ class Canvas {
 
 	}
 
+	getScale() {
+		return this.template.width / this.template.initialSize.width;
+	}
+
 	// define touch events
 	setTouchEvents () {
 		const mc = new Hammer.Manager(this.canvas);
@@ -266,13 +270,13 @@ class Canvas {
 		const pos = getEventPosition(e);
 
 		const selectedObj = this.getSelectedObject();
-		selectedObj.hover(pos);
-		this.testCoverage(selectedObj);
+		if (selectedObj) {
+			selectedObj.hover(pos);
+			this.testCoverage(selectedObj);
+		}
 	}
 
 	testCoverage () {
-
-
 
 		// check errorCoverage property in all objects
 		const result = !this.card.errorCoverage && this.items.filter(i => i.errorCoverage === true).length === 0;
@@ -295,7 +299,7 @@ class Canvas {
 	removeItems () {
 		// remove items that out of template area
 		const items = this.items.filter(i => i.removed !== true);
-		if (items.length != this.items.length) {
+		if (items.length !== this.items.length) {
 			// make card selected
 			this.card.selected = true;
 			this.items = items;
@@ -333,87 +337,82 @@ class Canvas {
 		this.card.selected = false;
 		this.items.forEach(item => item.selected = false);
 
-		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
+		const canvasScale = this.getScale();
 
-		const canvasCenter = {
-			x: this.canvas.width / 2,
-			y: this.canvas.height / 2
+
+		// area where image is still allowed (can be template area), after moving out of the area item will be removed
+		const allowedArea = {
+			width: this.template.width,
+			height: this.template.height,
+			x: -this.template.width / 2,
+			y: -this.template.height / 2
 		};
 
-		const templateArea = {
-			width: this.card.width,
-			height: this.card.height,
-			x: -this.card.template.width / 2,
-			y: -this.card.template.height / 2
-		};
 
 		const coverageArea = {
-			x: (templateArea.x + itemArea.Left * canvasScale),
-			y: (templateArea.y + itemArea.Top * canvasScale),
+			x: (-this.template.width / 2 + itemArea.Left * canvasScale),
+			y: (-this.template.height / 2 + itemArea.Top * canvasScale),
 			width: ((itemArea.Right - itemArea.Left) * canvasScale),
 			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
 		};
 
-		const cardItem = new ImageItem(id, url, {
+		const cardItem = new ImageItem(this.ctx, {
+			id,
+			url
+		}, {
 			coverageArea,
-			templateArea,
-			canvasCenter,
+			allowedArea,
 			initialPosition: options.initialPosition,
 			width: 50 * canvasScale,
 			height: 50 * canvasScale
 		});
 		this.items.push(cardItem);
 
-		this.removeItems();
+		//this.removeItems();
 
 		return cardItem;
 
 	}
 
-	getScale () {
-		return this.card.template.width / this.originalTemplateSize.width;
-	}
-
 	addTextItem (id, text, options = {}) {
 
 
-		//TODO add text coverage
 		const itemArea = AppSettings.designerSettings.Coverage.Logo;
 
 		// remove previously selected object
 		this.card.selected = false;
 		this.items.forEach(item => item.selected = false);
 
-		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
+		const canvasScale = this.getScale();
 		
 		const canvasCenter = {
 			x: this.canvas.width / 2,
 			y: this.canvas.height / 2
 		};
 		
-		const templateArea = {
-			width: this.card.width,
-			height: this.card.height,
-			x: -this.card.template.width / 2,
-			y: -this.card.template.height / 2
+		const allowedArea = {
+			width: this.template.width,
+			height: this.template.height,
+			x: -this.template.width / 2,
+			y: -this.template.height / 2
 		};
-		
+
 		const coverageArea = {
-			x: (templateArea.x + itemArea.Left * canvasScale),
-			y: (templateArea.y + itemArea.Top * canvasScale),
+			x: (-this.template.width / 2 + itemArea.Left * canvasScale),
+			y: (-this.template.height / 2 + itemArea.Top * canvasScale),
 			width: ((itemArea.Right - itemArea.Left) * canvasScale),
 			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
 		};
 		
 		
-		const cardItem = new TextItem('test', 'Hello World', this.ctx, {
+		const textItem = new TextItem(id, text, this.ctx, {
 			coverageArea,
-			templateArea: this.templateArea,
+			allowedArea,
 			initialPosition: options.initialPosition,
 		});
-		this.items.push(cardItem);
-		this.removeItems();
-		return cardItem;
+		this.items.push(textItem);
+
+		return textItem;
 	}
 
 	moveUp (val) {
@@ -440,21 +439,21 @@ class Canvas {
 		this.getSelectedObject().flip();
 	}
 
-	getConfiguration () {
+	// getConfiguration () {
+	//
+	// 	const canvasScale = this.card.template.width / this.originalTemplateSize.width;
+	//
+	// 	const items = this.items.map(i => i.getConfiguration(canvasScale));
+	// 	const card = this.card.getConfiguration(canvasScale);
+	// 	return {
+	// 		card,
+	// 		items
+	// 	};
+	// }
 
-		const canvasScale = this.card.template.width / this.originalTemplateSize.width;
-
-		const items = this.items.map(i => i.getConfiguration(canvasScale));
-		const card = this.card.getConfiguration(canvasScale);
-		return {
-			card,
-			items
-		};
-	}
-
-	getSnapshot () {
-		return this.canvas.toDataURL();
-	}
+	// getSnapshot () {
+	// 	return this.canvas.toDataURL();
+	// }
 
 	handleResize () {
 		const {width, height} = this.canvas.getBoundingClientRect();
@@ -466,12 +465,16 @@ class Canvas {
 		this.card.handleResize(this.scale);
 		this.items.forEach(item => item.handleResize(this.scale));
 
+
+		this.template.width *= this.scale;
+		this.template.height *= this.scale;
+
 		//}
 
 	}
 
 	// create snapshot of the canvas as as png image
-	static getPreviewImage (canvasObject, width, height) {
+	static getPreviewImage (canvasObject, width = 400, height = 400) {
 		console.log(canvasObject, width, height);
 
 		const previewCanvas = document.createElement('canvas');
@@ -480,12 +483,14 @@ class Canvas {
 		const previewCanvasContext = previewCanvas.getContext('2d');
 
 		const scale = {
-			width: width / canvasObject.card.template.width,
-			height: height / canvasObject.card.template.height
+			width: width / canvasObject.template.width,
+			height: height / canvasObject.template.height
 		};
 
-		Card.preview(canvasObject.card, previewCanvasContext);
+		Card.preview(canvasObject.card, scale, previewCanvasContext);
 		canvasObject.items.forEach(item => item.constructor.name === 'ImageItem' ? ImageItem.preview(item, scale, previewCanvasContext) : TextItem.preview(item, scale, previewCanvasContext));
+
+		previewCanvasContext.drawImage(canvasObject.template.image, 0, 0, canvasObject.template.width * scale.width, canvasObject.template.height * scale.height);
 
 		//TODO remove previewCanvas ????
 		return previewCanvas.toDataURL();
@@ -501,9 +506,7 @@ class Canvas {
 		let count = 0;
 		const cardLayers =[];
 		
-		const template = this.card.template;
-		console.log(template);
-		
+
 		const canvasScale = this.getScale();
 		console.log('canvasScale', canvasScale);
 		
@@ -513,8 +516,8 @@ class Canvas {
 		};
 		
 		const templateLetTopCorner = {
-			x: (canvasCenter.x - this.card.template.width /2) / canvasScale,
-			y: (canvasCenter.y - this.card.template.height /2) /canvasScale
+			x: (canvasCenter.x - this.template.width /2) / canvasScale,
+			y: (canvasCenter.y - this.template.height /2) /canvasScale
 		};
 		
 		
@@ -542,13 +545,6 @@ class Canvas {
 					Flip: layer.flipped ? 1: 0
 					
 				};
-				
-				// layerConfig.Configuration.Left = Math.floor( (layerCoords.left - template.x) / canvasScale);
-				// layerConfig.Configuration.Top = Math.floor( (layerCoords.top - template.y) / canvasScale);
-				// layerConfig.Configuration.Right = Math.floor((layerCoords.right - template.x) / canvasScale);
-				// layerConfig.Configuration.Bottom = Math.floor(  (layerCoords.bottom - template.y) / canvasScale);
-				// layerConfig.Configuration.Rotation = Math.floor(layer.rotation);
-				// layerConfig.Configuration.Flip = layer.flipped ? 1: 0;
 				
 				layerConfig.Configuration = config;
 				layerConfig.ImageId = layer.id;
@@ -579,10 +575,35 @@ class Canvas {
 				console.log('submit response', res);
 			})
 		}
-		
+
+
+
+
 	}
-	
-	
+
+	//  text functionality
+	getFontStyle() {
+		const obj = this.getSelectedObject();
+		if (obj.constructor.name === 'TextItem') {
+			return obj.getFontStyle();
+		}
+	}
+
+	setFontStyle(fontStyle) {
+		const obj = this.getSelectedObject();
+		if (obj.constructor.name === 'TextItem') {
+			obj.setFontStyle(fontStyle);
+		}
+	}
+
+
+	setText(text) {
+		const obj = this.getSelectedObject();
+		if (obj.constructor.name === 'TextItem') {
+			obj.setText(text);
+		}
+	}
+
 
 }
 

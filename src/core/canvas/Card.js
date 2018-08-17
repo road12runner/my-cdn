@@ -323,12 +323,12 @@ class Card extends CanvasObject {
 	
 	handleResize(scale) {
 		
-		this.template.width = this.template.width * scale;
-		this.template.height = this.template.height * scale;
+		this.coverageArea.width *= scale;
+		this.coverageArea.height *= scale;
 		
 		const imageRatio = this.width / this.height;
 		this.width *= scale;
-		this.height = this.width / cardRatio;
+		this.height = this.width / imageRatio;
 		
 		this.originPoint = {
 			x: this.originPoint.x * scale,
@@ -339,7 +339,7 @@ class Card extends CanvasObject {
 	}
 	
 	// render image for preview
-	static preview(cardObject, ctx) {
+	static preview(cardObject, scale, ctx) {
 		console.log(cardObject, ctx);
 		
 		const {width, height} = ctx.canvas;
@@ -349,15 +349,13 @@ class Card extends CanvasObject {
 			y: height / 2
 		};
 		
-		const scaleX = width / cardObject.template.width;
-		const scaleY = height / cardObject.template.height;
-		
+
 		
 		// clone card object
 		const card = {
 			image: cardObject.image,
-			width: cardObject.width * scaleX,
-			height: cardObject.height * scaleY,
+			width: cardObject.width * scale.width,
+			height: cardObject.height * scale.height,
 			rotation: cardObject.rotation,
 			flipped: cardObject.flipped,
 			originPoint: cardObject.originPoint

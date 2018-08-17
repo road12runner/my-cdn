@@ -141,7 +141,47 @@ class Designer {
 
 
 		this.el.querySelector('#btn-text').onclick = () => {
-			this.canvas.addTextItem('test', 'text');
+			const text = this.el.querySelector('#text-field').value;
+			console.log('text', text);
+			this.canvas.addTextItem('test', text);
+		};
+
+
+		this.el.querySelector('#btn-text-bold').onclick = () => {
+			const font = this.canvas.getFontStyle();
+			if (font) {
+				font.bold  = !font.bold;
+				this.canvas.setFontStyle(font);
+			}
+		};
+
+		this.el.querySelector('#btn-text-italic').onclick = () => {
+			const font = this.canvas.getFontStyle();
+			if (font) {
+				font.italic  = !font.italic;
+				this.canvas.setFontStyle(font);
+			}
+		};
+
+		this.el.querySelector('#btn-text-shadow').onclick = () => {
+			const font = this.canvas.getFontStyle();
+			if (font) {
+				font.shadow  = !font.shadow;
+				this.canvas.setFontStyle(font);
+			}
+		};
+
+		this.el.querySelector('#btn-text-stroke').onclick = () => {
+			const font = this.canvas.getFontStyle();
+			if (font) {
+				font.stroke  = !font.stroke;
+				this.canvas.setFontStyle(font);
+			}
+		};
+
+
+		this.el.querySelector('#text-field').oninput = (e) => {
+			this.canvas.setText(e.target.value);
 		}
 
 	}
@@ -152,31 +192,12 @@ class Designer {
 		const {width, height} =  previewEl.getBoundingClientRect();
 
 		const img = Canvas.getPreviewImage(this.canvas, width, height);
-		//console.log(img);
-
-		// const config = this.canvas.getConfiguration();
-		// const previewCanvas = new Canvas(null, {
-		// 	preview: true,
-		// 	config,
-		// });
-		//
-		//
-		// const previewImgUrl = previewCanvas.getSnapshot();
-		// console.log('previewImage', previewImgUrl);
-		// const previewImage = new Image();
 		const previewImage = new Image();
 		previewImage.src = img;
 		previewImage.onload = () => {
 			clearElement(previewEl);
 			previewEl.appendChild(previewImage);
 		};
-
-
-
-
-
-
-
 	}
 
 
