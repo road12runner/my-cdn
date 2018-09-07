@@ -13,6 +13,14 @@ import {clearElement} from '../../core/utils';
 import * as api from '../../core/net/api';
 
 
+//TODO get rig of jquery
+import jQuery from "jquery";
+window.$ = window.jQuery = jQuery;
+
+import '../../core/lib/spectrum.scss';
+
+import  '../../core/lib/color-picker';
+
 class Designer {
 	constructor(parentElement) {
 
@@ -36,7 +44,7 @@ class Designer {
 			onCardCoverage: e => this.handleTestCoverage(e),
 			touchDevice: AppSettings.isTouchDevice(),
 			//margin: 100,
-			scale: 2,
+			scale: 2.5,
 			isResponsible: true
 		});
 
@@ -142,46 +150,78 @@ class Designer {
 
 		this.el.querySelector('#btn-text').onclick = () => {
 			const text = this.el.querySelector('#text-field').value;
-			console.log('text', text);
 			this.canvas.addTextItem('test', text);
 		};
 
 
 		this.el.querySelector('#btn-text-bold').onclick = () => {
-			const font = this.canvas.getFontStyle();
-			if (font) {
+			const obj = this.canvas.getSelectedObject();
+			if (obj && obj.type === 'Text') {
+				const font = obj.getFontStyle();
 				font.bold  = !font.bold;
-				this.canvas.setFontStyle(font);
+				obj.setFontStyle(font);
 			}
+
 		};
 
 		this.el.querySelector('#btn-text-italic').onclick = () => {
-			const font = this.canvas.getFontStyle();
-			if (font) {
+			const obj = this.canvas.getSelectedObject();
+			if (obj && obj.type === 'Text') {
+				const font = obj.getFontStyle();
 				font.italic  = !font.italic;
-				this.canvas.setFontStyle(font);
+				obj.setFontStyle(font);
 			}
 		};
 
 		this.el.querySelector('#btn-text-shadow').onclick = () => {
-			const font = this.canvas.getFontStyle();
-			if (font) {
+			const obj = this.canvas.getSelectedObject();
+			if (obj && obj.type === 'Text') {
+				const font = obj.getFontStyle();
 				font.shadow  = !font.shadow;
-				this.canvas.setFontStyle(font);
+				obj.setFontStyle(font);
 			}
 		};
 
 		this.el.querySelector('#btn-text-stroke').onclick = () => {
-			const font = this.canvas.getFontStyle();
-			if (font) {
+
+			const obj = this.canvas.getSelectedObject();
+			if (obj && obj.type === 'Text') {
+				const font = obj.getFontStyle();
 				font.stroke  = !font.stroke;
-				this.canvas.setFontStyle(font);
+				obj.setFontStyle(font);
 			}
+
 		};
 
 
 		this.el.querySelector('#text-field').oninput = (e) => {
-			this.canvas.setText(e.target.value);
+			//this.canvas.setText(e.target.value);
+			const obj = this.canvas.getSelectedObject();
+			if (obj && obj.type === 'Text') {
+				obj.setText(e.target.value);
+			}
+
+		};
+
+
+		$('#text-color').spectrum({
+			containerClassName: 'awesome',
+			move: (color) => {
+
+				const obj = this.canvas.getSelectedObject();
+				if (obj && obj.type === 'Text') {
+					const font = obj.getFontStyle();
+					font.color  = color.toHexString();
+					obj.setFontStyle(font);
+				}
+
+
+			}
+		});
+
+		this.el.querySelector('#btn-add-doodle').onclick = () => {
+			console.log('add doodle');
+			this.canvas.addDoodleItem('doodle');
 		}
 
 	}
@@ -191,7 +231,7 @@ class Designer {
 
 		const {width, height} =  previewEl.getBoundingClientRect();
 
-		const img = Canvas.getPreviewImage(this.canvas, width, height);
+		const img = this.canvas.getPreviewImage(width, height);
 		const previewImage = new Image();
 		previewImage.src = img;
 		previewImage.onload = () => {

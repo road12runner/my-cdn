@@ -1,12 +1,14 @@
 import Card from './Card';
+
 import ImageItem from './ImageItem';
 import TextItem from './TextItem';
+import DoodleItem from './DoodleItem';
 
 import AppSettings from '../AppSettings';
 
 import { getEventPosition } from './canvas-helper';
 import Hammer from 'hammerjs';
-import * as api from "../net/api";
+import * as api from '../net/api';
 
 class Canvas {
 
@@ -43,28 +45,25 @@ class Canvas {
 
 		this.handleCardCoverage = options.onCardCoverage || function () {};
 
-		
 		this.template = {
 			width: (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241,
 			height: (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153,
-			initialSize :{
+			initialSize: {
 				width: (AppSettings.designerSettings.Desktop.Right - AppSettings.designerSettings.Desktop.Left) || 241,
 				height: (AppSettings.designerSettings.Desktop.Bottom - AppSettings.designerSettings.Desktop.Top) || 153,
 			}
 		};
-		
-		
 
 		// scale template size
 		if (options.scale) {
 			this.scale = options.scale;
 			const ratio = this.template.width / this.template.height;
-			this.template.width  *= options.scale;
+			this.template.width *= options.scale;
 			this.template.height = this.template.width / ratio;
 		} else if (this.margin) { // or put margins
-			
+
 			const ratio = this.template.width / this.template.height;
-			this.template.width  = this.canvas.width - (2 * this.margin);
+			this.template.width = this.canvas.width - (2 * this.margin);
 			this.template.height = Math.floor(this.template.width / ratio);
 		}
 
@@ -75,8 +74,6 @@ class Canvas {
 			y: this.canvas.height / 2
 		};
 
-		
-
 		this.card = new Card(this.ctx, {
 			coverageArea: {
 				x: canvasCenter.x - this.template.width / 2,
@@ -84,12 +81,11 @@ class Canvas {
 				width: this.template.width,
 				height: this.template.height,
 			},
-			image : {
+			image: {
 				id: options.imageId,
 				url: options.imageUrl
 			}
 		});
-
 
 		if (options.touchDevice) {
 			this.setTouchEvents();
@@ -118,12 +114,11 @@ class Canvas {
 		img.src = AppSettings.designerSettings.DesignTemplate.UrlLarge;
 		img.onload = () => {
 			this.template.image = img;
-		}
-		
+		};
 
 	}
 
-	getScale() {
+	getScale () {
 		return this.template.width / this.template.initialSize.width;
 	}
 
@@ -195,29 +190,27 @@ class Canvas {
 
 	}
 
-	
 	// render images on canvas
 	drawCard () {
-		
+
 		window.requestAnimationFrame(() => this.drawCard());
-		
-		
+
 		if (!this.template.image) {
 			return;
 		}
-		
+
 		//clear canvas
 		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-		
+
 		// render card image
 		this.card.render(this.ctx);
-		
+
 		//render other items (clipart, text, etc)
 		this.items.forEach(item => item.render(this.ctx));
-		
+
 		//render template
-		const x = this.canvas.width /2 - this.template.width /2;
-		const y = this.canvas.height /2 - this.template.height /2;
+		const x = this.canvas.width / 2 - this.template.width / 2;
+		const y = this.canvas.height / 2 - this.template.height / 2;
 		this.ctx.drawImage(this.template.image, x, y, this.template.width, this.template.height);
 
 	}
@@ -339,7 +332,6 @@ class Canvas {
 
 		const canvasScale = this.getScale();
 
-
 		// area where image is still allowed (can be template area), after moving out of the area item will be removed
 		const allowedArea = {
 			width: this.template.width,
@@ -347,7 +339,6 @@ class Canvas {
 			x: -this.template.width / 2,
 			y: -this.template.height / 2
 		};
-
 
 		const coverageArea = {
 			x: (-this.template.width / 2 + itemArea.Left * canvasScale),
@@ -376,7 +367,6 @@ class Canvas {
 
 	addTextItem (id, text, options = {}) {
 
-
 		const itemArea = AppSettings.designerSettings.Coverage.Logo;
 
 		// remove previously selected object
@@ -384,12 +374,12 @@ class Canvas {
 		this.items.forEach(item => item.selected = false);
 
 		const canvasScale = this.getScale();
-		
+
 		const canvasCenter = {
 			x: this.canvas.width / 2,
 			y: this.canvas.height / 2
 		};
-		
+
 		const allowedArea = {
 			width: this.template.width,
 			height: this.template.height,
@@ -403,8 +393,7 @@ class Canvas {
 			width: ((itemArea.Right - itemArea.Left) * canvasScale),
 			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
 		};
-		
-		
+
 		const textItem = new TextItem(id, text, this.ctx, {
 			coverageArea,
 			allowedArea,
@@ -414,6 +403,46 @@ class Canvas {
 
 		return textItem;
 	}
+
+
+	addDoodleItem (id, options = {}) {
+
+		const itemArea = AppSettings.designerSettings.Coverage.Logo;
+
+		// remove previously selected object
+		this.card.selected = false;
+		this.items.forEach(item => item.selected = false);
+
+		const canvasScale = this.getScale();
+
+		const canvasCenter = {
+			x: this.canvas.width / 2,
+			y: this.canvas.height / 2
+		};
+
+		const allowedArea = {
+			width: this.template.width,
+			height: this.template.height,
+			x: -this.template.width / 2,
+			y: -this.template.height / 2
+		};
+
+		const coverageArea = {
+			x: (-this.template.width / 2 + itemArea.Left * canvasScale),
+			y: (-this.template.height / 2 + itemArea.Top * canvasScale),
+			width: ((itemArea.Right - itemArea.Left) * canvasScale),
+			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
+		};
+
+		const doodleItem = new DoodleItem(id, {
+			coverageArea,
+			allowedArea,
+		});
+		this.items.push(doodleItem);
+
+		return doodleItem;
+	}
+
 
 	moveUp (val) {
 		this.getSelectedObject().moveUp(val);
@@ -465,7 +494,6 @@ class Canvas {
 		this.card.handleResize(this.scale);
 		this.items.forEach(item => item.handleResize(this.scale));
 
-
 		this.template.width *= this.scale;
 		this.template.height *= this.scale;
 
@@ -474,8 +502,7 @@ class Canvas {
 	}
 
 	// create snapshot of the canvas as as png image
-	static getPreviewImage (canvasObject, width = 400, height = 400) {
-		console.log(canvasObject, width, height);
+	getPreviewImage (width = 400, height = 400) {
 
 		const previewCanvas = document.createElement('canvas');
 		previewCanvas.width = width;
@@ -483,127 +510,170 @@ class Canvas {
 		const previewCanvasContext = previewCanvas.getContext('2d');
 
 		const scale = {
-			width: width / canvasObject.template.width,
-			height: height / canvasObject.template.height
+			width: width / this.template.width,
+			height: height / this.template.height
 		};
 
-		Card.preview(canvasObject.card, scale, previewCanvasContext);
-		canvasObject.items.forEach(item => item.constructor.name === 'ImageItem' ? ImageItem.preview(item, scale, previewCanvasContext) : TextItem.preview(item, scale, previewCanvasContext));
+		this.card.preview(scale, previewCanvasContext);
+		this.items.forEach(item => {
+			item.preview(scale, previewCanvasContext);
+		});
 
-		previewCanvasContext.drawImage(canvasObject.template.image, 0, 0, canvasObject.template.width * scale.width, canvasObject.template.height * scale.height);
+		previewCanvasContext.drawImage(this.template.image, 0, 0, this.template.width * scale.width, this.template.height * scale.height);
 
 		//TODO remove previewCanvas ????
 		return previewCanvas.toDataURL();
 	}
-	
+
 	// submit canvas to the PCS
-	submit() {
-		
-		
+	submit () {
+
+
 		// flat all layers
 		const layers = [this.card, ...this.items];
-		
+
 		let count = 0;
-		const cardLayers =[];
-		
+		const cardLayers = [];
 
 		const canvasScale = this.getScale();
 		console.log('canvasScale', canvasScale);
-		
+
 		const canvasCenter = {
-			x: this.canvas.width /2,
-			y: this.canvas.height /2
+			x: this.canvas.width / 2,
+			y: this.canvas.height / 2
 		};
-		
+
 		const templateLetTopCorner = {
-			x: (canvasCenter.x - this.template.width /2) / canvasScale,
-			y: (canvasCenter.y - this.template.height /2) /canvasScale
+			x: (canvasCenter.x - this.template.width / 2) / canvasScale,
+			y: (canvasCenter.y - this.template.height / 2) / canvasScale
 		};
-		
-		
-		layers.forEach( (layer, i) => {
-			
-			api.submitLayer(AppSettings.handoverKey, layer.layerType).then( layerConfig => {
-				console.log(layerConfig);
-				count++;
-				
-				// get scaled layer coordinates
-				const layerCoords = layer.getBoundRect();
-				const layerWidth = (layerCoords.right - layerCoords.left) /canvasScale;
-				const layerHeight = (layerCoords.bottom - layerCoords.top) / canvasScale;
-				const layerLeftTopCorner = {
-					x: (layerCoords.left + canvasCenter.x) /canvasScale - templateLetTopCorner.x,
-					y: (layerCoords.top + canvasCenter.y) / canvasScale - templateLetTopCorner.y
-				};
-				
-				const config = {
-					Left: Math.floor(layerLeftTopCorner.x),
-					Top: Math.floor(layerLeftTopCorner.y),
-					Right: Math.floor(layerLeftTopCorner.x + layerWidth),
-					Bottom: Math.floor(layerLeftTopCorner.y + layerHeight),
-					Rotation: Math.floor(layer.rotation),
-					Flip: layer.flipped ? 1: 0
-					
-				};
-				
-				layerConfig.Configuration = config;
-				layerConfig.ImageId = layer.id;
-				layerConfig.Order = i;
-				
-				cardLayers.push(layerConfig);
-				
-				//weird way to wait for all card layers submission
-				if (count === layers.length ) {
-					console.log('perform  submit request', layerConfig);
-					submitCard(cardLayers);
-				}
+
+
+		//upload custom images as texts doodles etc if required
+		this.uploadCustomImages().then(() => {
+
+			//return;
+
+			layers.forEach((layer, i) => {
+
+				// submit layer
+				api.submitLayer(AppSettings.handoverKey, layer.layerType).then(layerConfig => {
+					console.log(layerConfig);
+					count++;
+
+					// get scaled layer coordinates
+					const layerCoords = layer.getBoundRect();
+					const layerWidth = (layerCoords.right - layerCoords.left) / canvasScale;
+					const layerHeight = (layerCoords.bottom - layerCoords.top) / canvasScale;
+					const layerLeftTopCorner = {
+						x: (layerCoords.left + canvasCenter.x) / canvasScale - templateLetTopCorner.x,
+						y: (layerCoords.top + canvasCenter.y) / canvasScale - templateLetTopCorner.y
+					};
+
+					// text layer submitted as already rotated and flipped
+					const rotation = layer.type === 'Text' ?  0 : Math.floor(layer.rotation);
+					const flip = layer.type === 'Text' ?  0 : layer.flipped ? 1 : 0;
+
+					const config = {
+						Left: Math.floor(layerLeftTopCorner.x),
+						Top: Math.floor(layerLeftTopCorner.y),
+						Right: Math.floor(layerLeftTopCorner.x + layerWidth),
+						Bottom: Math.floor(layerLeftTopCorner.y + layerHeight),
+						Rotation: rotation,
+						Flip: flip
+
+					};
+
+					layerConfig.Configuration = config;
+					layerConfig.ImageId = layer.id;
+					layerConfig.Order = i;
+
+					cardLayers.push(layerConfig);
+
+					//weird way to wait for all card layers submission
+					if (count === layers.length) {
+						console.log('perform  submit request', layerConfig);
+						submitCard(cardLayers);
+					}
+				});
+
 			});
-			
+
+		}).catch( error => {
+			console.error('Can\'t upload custom image', error);
 		});
-		
-		
-		
-		
-		
-		
-		function submitCard(layers = []) {
-			
+
+		//return;
+
+		function submitCard (layers = []) {
+
 			const data = AppSettings.client;
 			data.Layers = layers;
-			
-			api.submitCard(AppSettings.handoverKey, AppSettings.clientId, data).then( res => {
+
+			api.submitCard(AppSettings.handoverKey, AppSettings.clientId, data).then(res => {
 				console.log('submit response', res);
-			})
+			});
 		}
 
+	}
 
+	uploadCustomImages () {
 
+		const width = AppSettings.designerSettings.Printer.Size.Width;
+		const height = AppSettings.designerSettings.Printer.Size.Height;
+		console.log(width, height);
+
+		const scale = {
+			width: width / this.template.width,
+			height: height / this.template.height
+		};
+
+		const uploadCustomImage = async (item, size, scale) => {
+
+			const imageData = await item.getCustomImage({width, height}, scale);
+
+			const res = await api.uploadCustomImage(AppSettings.handoverKey, AppSettings.clientId, 1, imageData);
+
+			return new Promise(resolve => {
+
+				item.id = res ? res.Id : null;
+				resolve(item.id);
+
+			});
+
+		};
+
+		const requests = this.items.filter(item => item.type === 'Text').map(item => uploadCustomImage(item, {
+			width,
+			height
+		}, scale));
+		console.log('requests', requests);
+
+		return Promise.all(requests);
 
 	}
 
 	//  text functionality
-	getFontStyle() {
+	getFontStyle () {
 		const obj = this.getSelectedObject();
-		if (obj.constructor.name === 'TextItem') {
+		if (obj.type === 'Text') {
 			return obj.getFontStyle();
 		}
 	}
 
-	setFontStyle(fontStyle) {
+	setFontStyle (fontStyle) {
 		const obj = this.getSelectedObject();
-		if (obj.constructor.name === 'TextItem') {
+		if (obj.type === 'Text') {
 			obj.setFontStyle(fontStyle);
 		}
 	}
 
-
-	setText(text) {
+	setText (text) {
 		const obj = this.getSelectedObject();
-		if (obj.constructor.name === 'TextItem') {
+		if (obj.type === 'Text') {
 			obj.setText(text);
 		}
 	}
-
 
 }
 

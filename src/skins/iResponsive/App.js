@@ -6,6 +6,7 @@ import MainContainer  from './MainContainer';
 import GalleryManager from '../../core/gallery/GaleryManager';
 import AppSettings from '../../core/AppSettings';
 
+
 class App {
 	
 	constructor({settings, handoverKey, rootElement}) {

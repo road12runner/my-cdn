@@ -69,6 +69,26 @@ async function performPostRequest(url, data = {}, encoding = 'application/json')
 }
 
 
+async function performBlobPostRequest(url, data = {}, encoding = 'application/json') {
+
+	let result = null;
+
+	const formData = new FormData();
+	formData.append('picture', data);
+
+	try {
+		const response  = await axios.post(url, formData, { headers : {"Content-Type" : encoding}});
+		result = response.data;
+	} catch (e) {
+		console.log('error', e);
+	}
+
+
+	return result;
+}
+
+
+
 async function performPutRequest(url, data = {}) {
 
 	let result = null;
@@ -111,6 +131,15 @@ export function submitLayer(handoverKey, layerType) {
 export function submitCard(handoverKey, cardImageId, data) {
 	return performPutRequest([hostname, 'designers', handoverKey, 'clientdesigns', cardImageId].join('/'), data);
 }
+
+export function uploadCustomImage(handoverKey, cardImageId, layerId, blobData) {
+
+	return performBlobPostRequest([hostname, 'designers', handoverKey, 'ClientDesigns', cardImageId, `Uploads?layerid=${layerId}`].join('/'), blobData);
+	// var layerid = layer ? _module.LayerCategory[layer] : _module.LayerCategory.Card;
+	// return ServerSide.Network.RestClient.MakeRestPath('designers', designer.HandoverKey, 'ClientDesigns', client.CardImageId, 'Uploads?layerid=' + layerid + wrap);
+
+}
+
 
 
 

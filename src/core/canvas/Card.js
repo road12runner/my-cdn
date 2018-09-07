@@ -339,9 +339,8 @@ class Card extends CanvasObject {
 	}
 	
 	// render image for preview
-	static preview(cardObject, scale, ctx) {
-		console.log(cardObject, ctx);
-		
+	preview(scale, ctx) {
+
 		const {width, height} = ctx.canvas;
 		
 		const canvasCenter = {
@@ -353,12 +352,12 @@ class Card extends CanvasObject {
 		
 		// clone card object
 		const card = {
-			image: cardObject.image,
-			width: cardObject.width * scale.width,
-			height: cardObject.height * scale.height,
-			rotation: cardObject.rotation,
-			flipped: cardObject.flipped,
-			originPoint: cardObject.originPoint
+			image: this.image,
+			width: this.width * scale.width,
+			height: this.height * scale.height,
+			rotation: this.rotation,
+			flipped: this.flipped,
+			originPoint: this.originPoint
 		};
 		
 		
@@ -377,9 +376,7 @@ class Card extends CanvasObject {
 		
 		
 		ctx.restore();
-		
-		//ctx.drawImage(template.img, canvasCenter.x - template.width / 2, canvasCenter.y - template.height / 2, template.width, template.height);
-		
+
 	}
 	
 }

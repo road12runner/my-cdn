@@ -1,22 +1,23 @@
 import CanvasObject from './CanvasObject';
-import { roundRect, allInside } from './canvas-helper';
+import { roundRect, allInside, hexToRgb } from './canvas-helper';
 
 import RedCros from '../../img/red-cross.png';
 
-class ImageItem extends CanvasObject {
-	constructor (ctx, image, options = {}) {
+const DEFAULT_LINE_WIDTH = 10;
+const DEFAULT_LINE_COLOR = '#ffffff';
+
+class DoodleItem extends CanvasObject {
+	constructor (ctx, options = {}) {
 		super();
 		this.ctx = ctx;
 
 		this.coverageArea = options.coverageArea;
 		this.allowedArea = options.allowedArea;
 
-		this.width = options.width || 50;
-		this.height = options.height || 50;
+		this.width = this.coverageArea.width || 50;
+		this.height = this.coverageArea.height || 50;
 
-		this.layerType = 'StockImageLayer';
-
-		this.id = image.id;
+		this.layerType = 'CustomImageLayer';
 
 		const bleeding = options.bleeding || 5;
 
@@ -24,15 +25,31 @@ class ImageItem extends CanvasObject {
 
 		this.removed = false;
 
-		this.setImage(image.url);
 
-		// remove icon (red cross shown when item mouved out from allowedArea)
+		// remove icon (red cross shown when item moved out from allowedArea)
 		const removedIcon = new Image();
 		removedIcon.src = RedCros;
 		removedIcon.onload = () => {
 			this.removedIcon = removedIcon;
 		};
 
+		this.originPoint = {
+			x: this.coverageArea.x + this.coverageArea.width / 2,
+			y: this.coverageArea.y + this.coverageArea.height / 2
+		};
+
+
+		this.selected = true;
+
+
+		//doodle stuff
+		this.points = [];
+		this.lines = [];
+		this.isDrawing = false;
+		this.isDrawingMode = true;
+
+		this.currentColor = DEFAULT_LINE_COLOR;
+		this.currentLineWidth = DEFAULT_LINE_WIDTH;
 	}
 
 	setImage (url) {
@@ -50,9 +67,6 @@ class ImageItem extends CanvasObject {
 	}
 
 	render (ctx) {
-		if (!this.image) {
-			return;
-		}
 
 		const {width, height} = ctx.canvas;
 
@@ -71,11 +85,11 @@ class ImageItem extends CanvasObject {
 
 		ctx.save();
 		ctx.translate(this.originPoint.x + canvasCenter.x, this.originPoint.y + canvasCenter.y);
-		if (this.rotation !== 0) {
-			ctx.rotate(this.rotation * Math.PI / 180);
-		}
+		// if (this.rotation !== 0) {
+		// 	ctx.rotate(this.rotation * Math.PI / 180);
+		// }
 
-		if (this.selected) {
+		if (this.selected && this.isDrawingMode === false) {
 			ctx.strokeStyle = this.borderColor;
 
 			// show coverage area
@@ -112,39 +126,133 @@ class ImageItem extends CanvasObject {
 
 		}
 
-		if (this.flipped) {
-			ctx.scale(-1, 1);
+
+		if (this.lines.length == 0 && this.points.length === 0) {
+			// show the hint
+			ctx.fillStyle = '#fff';
+			ctx.font = '20px Comic Sans Serif';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'center';
+			ctx.fillText('Draw here',  0, 0, this.coverageArea.width, this.coverageArea.width);
+		} else {
+
+			this.drawLines(ctx);
+			this.drawPoints(this.currentColor, this.currentLineWidth, this.points, ctx);
+
+			// draw buttons
+			// ctx.restore();
+			// ctx.translate(canvasCenter.x + this.coverageArea.x, canvasCenter.y + this.coverageArea.y);
+			roundRect(ctx, -this.coverageArea.width/2, -this.coverageArea.height, 20, 20, 3);
+			// ctx.beginPath();
+			//
+			//
+			// ctx.fillStyle = 'rgba(100,100,100, 1)';
+			// ctx.arc(-this.coverageArea.width/2, -this.coverageArea.height /2, 10, 0, 2 * Math.PI);
+			// ctx.fill();
+
+
 		}
 
-		ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
 
-		if (this.flipped) {
-			ctx.scale(-1, 1);
-		}
+		 ctx.restore();
+		//
+		// if (this.removed && this.removedIcon) {
+		//
+		// 	ctx.save();
+		//
+		// 	const {x, y} = this.originPoint;
+		// 	ctx.translate(x + canvasCenter.x, y + canvasCenter.y);
+		// 	if (this.rotation !== 0) {
+		// 		ctx.rotate(this.rotation * Math.PI / 180);
+		// 	}
+		//
+		// 	ctx.beginPath();
+		// 	ctx.fillStyle = 'rgba(100,100,100, 1)';
+		// 	ctx.arc(-this.width / 2, -this.height / 2, 10, 0, 2 * Math.PI);
+		// 	ctx.fill();
+		//
+		// 	ctx.drawImage(this.removedIcon, -this.width / 2 - 5, -this.height / 2 - 5, 10, 10);
+		//
+		// 	ctx.restore();
+		// }
 
+	}
 
-		ctx.restore();
-
-		if (this.removed && this.removedIcon) {
-
-			ctx.save();
-
-			const {x, y} = this.originPoint;
-			ctx.translate(x + canvasCenter.x, y + canvasCenter.y);
-			if (this.rotation !== 0) {
-				ctx.rotate(this.rotation * Math.PI / 180);
+	drawLines (ctx) {
+		if (this.lines.length > 0) {
+			for (const line of this.lines) {
+				this.drawPoints(line.color, line.lineWidth, line.points, ctx);
 			}
+		}
+	}
 
-			ctx.beginPath();
-			ctx.fillStyle = 'rgba(100,100,100, 1)';
-			ctx.arc(-this.width / 2, -this.height / 2, 10, 0, 2 * Math.PI);
-			ctx.fill();
-
-			ctx.drawImage(this.removedIcon, -this.width / 2 - 5, -this.height / 2 - 5, 10, 10);
-
-			ctx.restore();
+    drawPoints (color, lineWidth, points, ctx) {
+		if (points.length === 0) {
+			return;
 		}
 
+		let p1 = points[0];
+		let p2 = points[1];
+
+	    const midPointBtw = (p1, p2) => {
+		    return {
+			    x: p1.x + (p2.x - p1.x) / 2,
+			    y: p1.y + (p2.y - p1.y) / 2
+		    };
+	    };
+
+	    ctx.lineWidth = DEFAULT_LINE_WIDTH;
+	    ctx.lineJoin = ctx.lineCap = 'round';
+	    ctx.shadowBlur = 2;
+
+		ctx.strokeStyle = color;
+		ctx.lineWidth = lineWidth;
+		// define shadows
+		const rgb = hexToRgb(color);
+		const shadowColor = 'rbga(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ', 0.5)';
+		ctx.shadowColor = shadowColor;
+		ctx.beginPath();
+		ctx.moveTo(p1.x, p1.y);
+
+		for (let i = 1, len = points.length; i < len; i++) {
+			// we pick the point between pi+1 & pi+2 as the
+			// end point and p1 as our control point
+			var midPoint = midPointBtw(p1, p2);
+			ctx.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+			p1 = points[i];
+			p2 = points[i + 1];
+		}
+
+		ctx.lineTo(p1.x, p1.y);
+		ctx.stroke();
+	}
+
+
+	click(pos) {
+		this.isDrawing = true;
+		console.log('click', pos);
+	}
+
+	hover(pos) {
+		if (this.isDrawing) {
+			console.log('hover', pos);
+			const {x,y, width, height} = this.coverageArea;
+
+			// can draw only withing coverage area
+			if ( pos.x >= x && pos.x <= x + width && pos.y >= y && pos.y <= y + height) {
+				this.points.push({
+					x: pos.x - this.originPoint.x,
+					y: pos.y  - this.originPoint.y
+				});
+
+			}
+		}
+	}
+
+	done() {
+		this.isDrawing = false;
+		this.lines.push({color: this.currentColor, lineWidth: this.currentLineWidth, points: this.points.slice(0)});
+		this.points.length = 0;
 	}
 
 	hitTest (pos) {
@@ -176,12 +284,6 @@ class ImageItem extends CanvasObject {
 
 		return this.errorCoverage;
 	}
-
-	// getConfiguration () {
-	// 	const config = super.getConfiguration();
-	// 	config.image = this.img;
-	// 	return config;
-	// }
 
 	handleResize (scale) {
 		const ratio = this.width / this.height;
@@ -238,4 +340,4 @@ class ImageItem extends CanvasObject {
 
 }
 
-export default ImageItem;
+export default DoodleItem;

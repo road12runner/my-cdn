@@ -350,23 +350,8 @@ class CanvasObject {
 
 
 
-	getConfiguration() {
-		return {
-			id: this.id,
-			layerType: this.layerType,
-			imageUrl : this.img.src,
-			rotation: this.rotation,
-			flipped: this.flipped,
-			width: this.width ,
-			height: this.height,
-			originPoint: this.originPoint,
 
-		};
-	}
-
-
-
-	getBoundRect(scale) {
+	getBoundRect() {
 
 		const points = [this.getLeftBottomCorner(),
 			this.getRightTopCorner(),
@@ -391,6 +376,10 @@ class CanvasObject {
 			bottom: Math.max.apply(null, yArrays)
 		};
 
+	}
+
+	preview(scale, ctx) {
+		// every child should overwrite  this method !!!
 	}
 
 }
