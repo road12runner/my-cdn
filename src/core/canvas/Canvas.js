@@ -9,6 +9,26 @@ import AppSettings from '../AppSettings';
 import { getEventPosition } from './canvas-helper';
 import Hammer from 'hammerjs';
 import * as api from '../net/api';
+import {IMAGE, DOODLE, TEXT} from './itemTypes';
+
+
+const  getTouchPos =(e) => {
+	const rect = e.target.getBoundingClientRect();
+	const eventPos = e.center;
+
+	return {
+		x: eventPos.x - rect.left  - rect.width / 2,
+		y: eventPos.y - rect.top - rect.height /2
+	};
+
+// 	return {
+// 		x: eventPos.x - rect.left,
+// 		y: eventPos.y - rect.top
+// 	};
+//
+};
+
+
 
 class Canvas {
 
@@ -139,17 +159,32 @@ class Canvas {
 		// add to the Manager
 		mc.add([pinch, rotate, pan, tap]);
 
-		mc.on('rotatestart', e => this.getSelectedObject().startRotate(e.rotation));
+		mc.on('rotatestart', e => {
+			const obj = this.getSelectedObject();
+			if (obj.type !== DOODLE) {
+				obj.startRotate(e.rotation)
+			}
+		});
 		mc.on('rotateend', e => {
-			this.getSelectedObject().endRotate();
-			this.removeItems();
+			const obj = this.getSelectedObject();
+			if (obj.type !== DOODLE) {
+				obj.endRotate();
+				this.removeItems();
+			}
 		});
 		mc.on('rotatemove', e => {
 			const obj = this.getSelectedObject();
-			obj.doRotate(e.rotation);
-			this.testCoverage();
+			if (obj.type !== DOODLE) {
+				obj.doRotate(e.rotation);
+				this.testCoverage();
+			}
 		});
-		mc.on('pinchstart', e => this.getSelectedObject().startZoom());
+		mc.on('pinchstart', e => {
+			const obj = this.getSelectedObject();
+			if (obj.type !== DOODLE) {
+				obj.startZoom();
+			}
+		});
 		mc.on('pinchend', e => {
 			this.getSelectedObject().endZoom();
 			this.removeItems();
@@ -160,32 +195,40 @@ class Canvas {
 			this.testCoverage();
 		});
 		mc.on('panstart', e => {
-			this.getSelectedObject().startMove();
+			const obj = this.getSelectedObject();
+			if (obj.type !== DOODLE) {
+				obj.startMove();
+			} else {
+
+
+				obj.startTouch(getTouchPos(e));
+			}
+
 		});
 		mc.on('panmove', e => {
 			const obj = this.getSelectedObject();
-			obj.doMove({x: e.deltaX, y: e.deltaY});
-			this.testCoverage();
-
+			if (obj.type !== DOODLE) {
+				obj.doMove({x: e.deltaX, y: e.deltaY});
+				this.testCoverage();
+			} else {
+				//obj.hover({x: e.deltaX, y: e.deltaY});
+				obj.keepTouch(getTouchPos(e));
+			}
 		});
 		mc.on('panend', e => {
-			this.getSelectedObject().endMove();
-			this.removeItems();
+			const obj = this.getSelectedObject();
+			if (obj.type !== DOODLE) {
+				obj.endMove();
+				this.removeItems();
+			} else {
+				obj.endTouch();
+			}
 		});
 		mc.on('singletap', e => {
 
-			function getPos (e) {
-				const rect = e.target.getBoundingClientRect();
-				const eventPos = e.center;
 
-				return {
-					x: eventPos.x - rect.left,
-					y: eventPos.y - rect.top
-				};
-			}
 
-			const pos = getPos(e);
-			this.findSelectedObject(pos);
+			return this.findSelectedObject(getTouchPos(e));
 		});
 
 	}
@@ -230,7 +273,9 @@ class Canvas {
 			selectedObject = selectedItems[0];
 		} else {
 
-			for (const item of this.items) {
+
+			// check if  any item expect doodle is selected
+			for (const item of this.items.filter( item => item.type !== DOODLE)) {
 				if (!selectedObject && item.hitTest(pos)) {
 					item.selected = true;
 					selectedObject = item;
@@ -238,9 +283,29 @@ class Canvas {
 					item.selected = false;
 				}
 			}
+
+			// test for doodle selection
+			if (!selectedObject)  {
+				const doodleItem = this.items.find( item => item.type === DOODLE);
+				if (doodleItem) {
+					if (doodleItem.hitTest(pos)) {
+						doodleItem.selected = true;
+						selectedObject = doodleItem;
+					} else {
+						doodleItem.selected = false;
+					}
+				}
+			}
+
+
 		}
 
 		if (selectedObject) {
+			// move selected item on top;
+			const sortedItems = this.items.filter( item => item !== selectedObject);
+			this.items = [...sortedItems, selectedObject];
+
+
 			// found an item - remove selection from card and delegate click event to selected item
 			this.card.selected = false;
 			return selectedObject;
@@ -405,7 +470,7 @@ class Canvas {
 	}
 
 
-	addDoodleItem (id, options = {}) {
+	addDoodleItem (options = {}) {
 
 		const itemArea = AppSettings.designerSettings.Coverage.Logo;
 
@@ -415,18 +480,6 @@ class Canvas {
 
 		const canvasScale = this.getScale();
 
-		const canvasCenter = {
-			x: this.canvas.width / 2,
-			y: this.canvas.height / 2
-		};
-
-		const allowedArea = {
-			width: this.template.width,
-			height: this.template.height,
-			x: -this.template.width / 2,
-			y: -this.template.height / 2
-		};
-
 		const coverageArea = {
 			x: (-this.template.width / 2 + itemArea.Left * canvasScale),
 			y: (-this.template.height / 2 + itemArea.Top * canvasScale),
@@ -434,10 +487,12 @@ class Canvas {
 			height: ((itemArea.Bottom - itemArea.Top) * canvasScale)
 		};
 
-		const doodleItem = new DoodleItem(id, {
+		const doodleItem = new DoodleItem({
 			coverageArea,
-			allowedArea,
+			lineWidth : options.lineWidth,
+			lineColor: options.lineColor
 		});
+
 		this.items.push(doodleItem);
 
 		return doodleItem;
@@ -468,21 +523,6 @@ class Canvas {
 		this.getSelectedObject().flip();
 	}
 
-	// getConfiguration () {
-	//
-	// 	const canvasScale = this.card.template.width / this.originalTemplateSize.width;
-	//
-	// 	const items = this.items.map(i => i.getConfiguration(canvasScale));
-	// 	const card = this.card.getConfiguration(canvasScale);
-	// 	return {
-	// 		card,
-	// 		items
-	// 	};
-	// }
-
-	// getSnapshot () {
-	// 	return this.canvas.toDataURL();
-	// }
 
 	handleResize () {
 		const {width, height} = this.canvas.getBoundingClientRect();
@@ -643,7 +683,7 @@ class Canvas {
 
 		};
 
-		const requests = this.items.filter(item => item.type === 'Text').map(item => uploadCustomImage(item, {
+		const requests = this.items.filter(item => item.type === 'Text' || item.type === DOODLE).map(item => uploadCustomImage(item, {
 			width,
 			height
 		}, scale));

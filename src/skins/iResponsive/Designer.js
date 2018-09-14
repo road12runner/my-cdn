@@ -11,13 +11,13 @@ import {GALLERY_LOADED} from '../../core/eventTypes';
 import {clearElement} from '../../core/utils';
 
 import * as api from '../../core/net/api';
-
+import {DOODLE} from '../../core/canvas/itemTypes';
 
 //TODO get rig of jquery
 import jQuery from "jquery";
 window.$ = window.jQuery = jQuery;
 
-import '../../core/lib/spectrum.scss';
+	import '../../core/lib/spectrum.scss';
 
 import  '../../core/lib/color-picker';
 
@@ -44,7 +44,7 @@ class Designer {
 			onCardCoverage: e => this.handleTestCoverage(e),
 			touchDevice: AppSettings.isTouchDevice(),
 			//margin: 100,
-			scale: 2.5,
+			scale: 2,
 			isResponsible: true
 		});
 
@@ -219,19 +219,66 @@ class Designer {
 			}
 		});
 
-		this.el.querySelector('#btn-add-doodle').onclick = () => {
-			console.log('add doodle');
-			this.canvas.addDoodleItem('doodle');
-		}
 
+		var doodleColor = '#ffffff';
+		$('#doodle-color').spectrum({
+			color: doodleColor,
+			containerClassName: 'awesome',
+			move: (color) => {
+
+				doodleColor = color.toHexString();
+
+				const obj = this.canvas.getSelectedObject();
+				if (obj && obj.type === DOODLE) {
+					obj.setLineColor(doodleColor);
+				}
+
+
+			}
+		});
+
+
+
+		this.el.querySelector('#btn-add-doodle').onclick = () => {
+			this.canvas.addDoodleItem({
+				lineWidth: this.el.querySelector('#doodle-line-width').value,
+				lineColor: doodleColor
+			});
+		};
+
+
+		this.el.querySelector('#btn-doodle-clear').onclick = () => {
+			const obj = this.canvas.getSelectedObject();
+			if (DOODLE === obj.type) {
+				obj.clear();
+			}
+		};
+
+		this.el.querySelector('#btn-doodle-undo').onclick = () => {
+			const obj = this.canvas.getSelectedObject();
+			if (DOODLE === obj.type) {
+				obj.undo();
+			}
+		};
+
+
+		this.el.querySelector('#doodle-line-width').oninput = (e) => {
+			const obj = this.canvas.getSelectedObject();
+			if (obj && obj.type === DOODLE) {
+				obj.setLineWidth(+e.target.value);
+			}
+		}
 	}
 
 	renderPreview() {
 		const previewEl = this.parentElement.querySelector('.preview-container');
 
-		const {width, height} =  previewEl.getBoundingClientRect();
+		//const {width, height} =  previewEl.getBoundingClientRect();
 
-		const img = this.canvas.getPreviewImage(width, height);
+		//AppSettings.designerSettings.Desktop.Printer.Size
+		const {Width, Height} =  AppSettings.designerSettings.Printer.Size;
+
+		const img = this.canvas.getPreviewImage(Width, Height);
 		const previewImage = new Image();
 		previewImage.src = img;
 		previewImage.onload = () => {

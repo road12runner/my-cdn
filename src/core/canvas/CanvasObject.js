@@ -384,4 +384,4 @@ class CanvasObject {
 
 }
 
-export default CanvasObject;
+export default CanvasObject; 

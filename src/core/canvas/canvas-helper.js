@@ -52,6 +52,7 @@ export function getEventPosition (event) {
 }
 
 
+
 export function allInside (vertices, coverage) {
 
 	const box = {
