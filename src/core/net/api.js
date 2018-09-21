@@ -4,6 +4,8 @@ import qs from 'qs';
 //const hostname = 'https://localhost/api';
 const hostname = 'https://devserver.serversidegraphics.com/pcs/api/v1';
 // https://devserver.serversidegraphics.com/pcs/api/v1/designers/21b32de0-09de-4ec2-a505-1a00eb9d3ac4
+import {LAYER_CATEGORY_ID} from '../constants';
+
 
 function createQuery(arr) {
 	const qs = [];
@@ -195,6 +197,12 @@ export function getRedirect(url) {
 		}
 	};
 
+}
+
+
+export function getImageUploadUrl(handoverKey, clientId, layerId) {
+	const layer = layerId ? LAYER_CATEGORY_ID[layerId] : LAYER_CATEGORY_ID.Card;
+	return [hostname, 'designers', handoverKey, 'ClientDesigns', clientId, `Uploads?layerid=${layer}`].join('/');
 }
 
 

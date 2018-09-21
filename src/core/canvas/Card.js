@@ -2,17 +2,16 @@ import CanvasObject from './CanvasObject';
 import {roundRect, isInside, allInside, doPolygonsIntersect} from './canvas-helper';
 import {CANVAS_ACTIONS} from './canvasActionTypes';
 
+import {STOCK_IMAGE, CUSTOM_IMAGE} from './itemTypes'
+
 class Card extends CanvasObject {
 	constructor(ctx, options = {}) {
 		super();
 		this.ctx = ctx;
 		
-		//TODO set correct imagelayer type
-		this.layerType = 'StockImageLayer';
-		
+		this.layerType = STOCK_IMAGE;
 		
 		this.coverageArea = options.coverageArea;
-		
 		
 		this.template = options.templateArea;
 		
@@ -39,9 +38,27 @@ class Card extends CanvasObject {
 		}
 		
 	}
+
+	reset() {
+		this.locked = false;
+		this.rotation = 0;
+		this.originPoint = {
+			x: 0,
+			y: 0
+		};
+		this.width = this.coverageArea.width + 40;
+		this.height = this.coverageArea.height + 40;
+
+	}
+
 	
-	setImage(id, url) {
+	setImage(id, url, imageType  = STOCK_IMAGE) {
+
+		this.reset();
+
 		this.id = id;
+		this.layerType = imageType;
+
 		const img = new Image();
 		img.crossOrigin = 'Anonymous';
 		img.src = url;

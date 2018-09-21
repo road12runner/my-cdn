@@ -32,6 +32,15 @@ module.exports = ({mode, skin}) => {
 				new CopyWebpackPlugin([
 					`src/skins/${skin}/assets/app.js`
 				]),
+				new CopyWebpackPlugin([
+					{
+						from: 'src/shared-assets/filters/*',
+						to: 'filters',
+						test: /([^/]+)\/(.+)\.png$/,
+						flatten: true
+					}
+
+				]),
 				new HtmlWebpackIncludeAssetsPlugin({
 					assets: ['app.js'],
 					append: true

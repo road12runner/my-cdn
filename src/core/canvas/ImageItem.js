@@ -1,6 +1,8 @@
 import CanvasObject from './CanvasObject';
 import { roundRect, allInside } from './canvas-helper';
 
+import {STOCK_IMAGE, CUSTOM_IMAGE} from './itemTypes';
+
 import RedCros from '../../img/red-cross.png';
 
 class ImageItem extends CanvasObject {
@@ -14,7 +16,7 @@ class ImageItem extends CanvasObject {
 		this.width = options.width || 50;
 		this.height = options.height || 50;
 
-		this.layerType = 'StockImageLayer';
+		this.layerType = STOCK_IMAGE;
 
 		this.id = image.id;
 
@@ -35,7 +37,10 @@ class ImageItem extends CanvasObject {
 
 	}
 
-	setImage (url) {
+	setImage (url, imageType = STOCK_IMAGE) {
+
+		this.layerType = imageType;
+
 		const img = new Image();
 		img.crossOrigin = 'Anonymous';
 		img.src = url;
