@@ -291,14 +291,17 @@ class Designer {
 
 		this.el.querySelector('#btn-filters-intensity-low').onclick = () => {
 			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.LOW;
+			this.renderFilters(this.filterIntensity);
 		};
 
 		this.el.querySelector('#btn-filters-intensity-medium').onclick = () => {
 			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.MEDIUM;
+			this.renderFilters(this.filterIntensity);
 		};
 
 		this.el.querySelector('#btn-filters-intensity-high').onclick = () => {
 			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.HIGH;
+			this.renderFilters(this.filterIntensity);
 		};
 	}
 
@@ -306,6 +309,7 @@ class Designer {
 		const obj = this.canvas.getSelectedObject();
 		console.log('image', obj.image);
 
+		this.el.querySelector('.effects').innerHTML = '';
 
 		const getSpecialEffects = () => {
 
@@ -326,7 +330,26 @@ class Designer {
 			// 	console.log('after process', res);
 			// });
 
-			app.process(obj.image, this.filterIntensity);
+			const that = this;
+			app.process(obj.image, filterIntensity, (res) => {
+				console.log(res);
+
+				const img = new Image();
+				img.src = res.image;
+
+				img.className = 'special-effect';
+				img.id = res.effect.id;
+				img.setAttribute('data-effect-name', res.effect.name);
+				img.onclick = (e) => {
+
+					const effectName = e.target.getAttribute('data-effect-name');
+					console.log('onclick', e.target.id);
+
+					obj.setSpecialEffect(effectName, this.filterIntensity, e.target.src);
+				};
+
+				that.el.querySelector('.effects').appendChild(img);
+			});
 
 		});
 

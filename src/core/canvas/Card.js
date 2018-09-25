@@ -2,7 +2,7 @@ import CanvasObject from './CanvasObject';
 import {roundRect, isInside, allInside, doPolygonsIntersect} from './canvas-helper';
 import {CANVAS_ACTIONS} from './canvasActionTypes';
 
-import {STOCK_IMAGE, CUSTOM_IMAGE} from './itemTypes'
+import {STOCK_IMAGE, CUSTOM_IMAGE, CARD} from './itemTypes'
 
 class Card extends CanvasObject {
 	constructor(ctx, options = {}) {
@@ -10,7 +10,7 @@ class Card extends CanvasObject {
 		this.ctx = ctx;
 		
 		this.layerType = STOCK_IMAGE;
-		
+		this.type = CARD;
 		this.coverageArea = options.coverageArea;
 		
 		this.template = options.templateArea;
@@ -51,7 +51,25 @@ class Card extends CanvasObject {
 
 	}
 
-	
+	setSpecialEffect(specialEffectName, intensity, url) {
+		const specialEffectImage = new Image();
+		specialEffectImage.crossOrigin = 'Anonymous';
+		specialEffectImage.src = url;
+		specialEffectImage.onload = () => {
+			this.specialEffectName = specialEffectName;
+			this.specialEffectIntensity  = intensity;
+			this.specialEffectImage = specialEffectImage;
+		}
+	}
+
+	removeSpecialEffects() {
+		this.specialEffectImage = null;
+		this.specialEffectIntensity = 0;
+		this.specialEffectName = '';
+
+	}
+
+
 	setImage(id, url, imageType  = STOCK_IMAGE) {
 
 		this.reset();
@@ -82,7 +100,10 @@ class Card extends CanvasObject {
 			y: ctx.canvas.height / 2
 		};
 		
-		
+
+		const renderedImage = this.specialEffectImage || this.image;
+
+
 		ctx.save();
 		ctx.translate(this.originPoint.x + canvasCenter.x, this.originPoint.y + canvasCenter.y);
 		
@@ -95,7 +116,7 @@ class Card extends CanvasObject {
 		if (this.flipped) {
 			ctx.scale(-1, 1);
 		}
-		ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+		ctx.drawImage(renderedImage, -this.width / 2, -this.height / 2, this.width, this.height);
 		
 		if (this.flipped) {
 			// flip back whole canvas
@@ -161,7 +182,7 @@ class Card extends CanvasObject {
 		}
 		
 		
-		ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+		ctx.drawImage(renderedImage, -this.width / 2, -this.height / 2, this.width, this.height);
 		
 		// flip back whole canvas
 		if (this.flipped) {
@@ -369,7 +390,7 @@ class Card extends CanvasObject {
 		
 		// clone card object
 		const card = {
-			image: this.image,
+			image: this.specialEffectImage || this.image,
 			width: this.width * scale.width,
 			height: this.height * scale.height,
 			rotation: this.rotation,

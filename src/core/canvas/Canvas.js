@@ -9,7 +9,7 @@ import AppSettings from '../AppSettings';
 import { getEventPosition } from './canvas-helper';
 import Hammer from 'hammerjs';
 import * as api from '../net/api';
-import {IMAGE, DOODLE, TEXT} from './itemTypes';
+import {IMAGE, DOODLE, TEXT, CARD} from './itemTypes';
 
 
 const  getTouchPos =(e) => {
@@ -627,6 +627,16 @@ class Canvas {
 					layerConfig.Configuration = config;
 					layerConfig.ImageId = layer.id;
 					layerConfig.Order = i;
+					if (layer.type === CARD) {
+						// set special effects if any
+						if (layer.specialEffectImage) {
+							layerConfig.SpecialEffectFilter = {
+								Name: layer.specialEffectName,
+								Intensity: layer.specialEffectIntensity
+							};
+						}
+					}
+
 
 					cardLayers.push(layerConfig);
 

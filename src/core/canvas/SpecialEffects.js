@@ -9,7 +9,8 @@ export const SPECIAL_EFFECTS_INTENSITY = {
 
 
 export const AVAILABLE_EFFECTS = [
-	{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png', alpha: 'mask.jpg'}]},
+	//{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png', alpha: 'mask.jpg'}]},
+	{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png'}]},
 	{id: 1, name: 'inkwell', caption: 'Inkwell', data: [{lut: 'inkwell_100.png', baselineLut: 'inkwell_0.png'}]},
 	{id: 2, name: 'clarendon', caption: 'Clarendon', data:[{lut: 'clarendon_100.png'}]},
 	{id: 3, name: 'gingham', caption: 'Gingham', data: [{lut: 'gingham_100.png'}]},
@@ -30,7 +31,9 @@ const INTENSITY_MAP = {
 };
 
 
+
 /**
+ *
  * Blend second imageData into first, using opacity if given.
  *
  * @param {ImageData} base - bottom layer
@@ -108,7 +111,7 @@ class SpecialEffects {
 		this.publicPath = opts.publicPath || '/filters/';
 		this.gradingCanvas = document.createElement('canvas');
 		this.gradingContext = this.gradingCanvas.getContext('2d');
-		this.maxSize = opts.maxSize || [600, 600];
+		this.maxSize = opts.maxSize || {width: 700, height: 700};
 
 		this.baselineLut = 'baseline_lut.png';
 
@@ -170,7 +173,8 @@ class SpecialEffects {
 
 			return new Promise(resolve => {
 				const img = new Image();
-				img.src = this.publicPath + imgPath;
+				//TODO absolute path should be fixed depends on env, as the plugin might called from customer host
+				img.src = location.href.substr(0, location.href.lastIndexOf('/')) + this.publicPath + imgPath;
 				img.onload = () => {
 					resolve(img);
 				}
@@ -196,85 +200,109 @@ class SpecialEffects {
 		this.gradingContext.drawImage(image, 0, 0);
 	};
 
-	/**
-	 * @param {HTML Element} baseImageCtx - context containing the original image data to apply the LUT to
-	 * @param {Image} lut - Lookup table
-	 * @param {Image} alpha - Alpha channel image, if supplied applies as alpha channel, if null opaque image returned
-	 *
-	 * @returns {Image} Image with LUT applied
-	 */
-	applyLut (baseImageCtx, intensity, lut, baselineLut, alpha) {
-		const width = baseImageCtx.canvas.width;
-		const height = baseImageCtx.canvas.height;
-
-		const baseImageData = baseImageCtx.getImageData(
-			0,
-			0,
-			width,
-			height
-		);
-
-		const iData = baseImageData.data;
-		const lData = lutToData(baselineLut, lut, intensity);
-		let aData = null;
-
-		if (alpha) {
-			const alphaCanvas = document.createElement('canvas');
-			alphaCanvas.width = width;
-			alphaCanvas.height = height;
-			alphaCanvas.getContext('2d').drawImage(alpha, 0, 0, width, height);
-			aData = alphaCanvas.getContext('2d').getImageData(0, 0, width, height).data;
-		}
-
-		for (let i = 0, l = iData.length; i < l; i += 4) {
-			let r, g, b;
-
-			r = Math.floor(iData[i] / 4);
-			g = Math.floor(iData[i + 1] / 4);
-			b = Math.floor(iData[i + 2] / 4);
-
-			let lutX, lutY, lutIndex;
-
-			lutX = b % 8 * 64 + r;
-			lutY = Math.floor(b / 8) * 64 + g;
-			lutIndex = (lutY * lut.naturalWidth + lutX) * 4;
-
-			let lutR, lutG, lutB, lutA;
-
-			lutR = lData[lutIndex];
-			lutG = lData[lutIndex + 1];
-			lutB = lData[lutIndex + 2];
-
-			iData[i] = lutR;
-			iData[i + 1] = lutG;
-			iData[i + 2] = lutB;
-
-			lutA = alpha ? aData[i] : 255; //Grayscale mask, all RBG values are the same.
-			iData[i + 3] = lutA;
-		}
-
-		return baseImageData;
-	};
 
 	/**
 	 * Process the image
 	 */
-	process (image, intensity) {
+	process (image, intensity, callback) {
+
+		/**
+		 * @param {HTML Element} baseImageCtx - context containing the original image data to apply the LUT to
+		 * @param {Image} lut - Lookup table
+		 * @param {Image} alpha - Alpha channel image, if supplied applies as alpha channel, if null opaque image returned
+		 *
+		 * @returns {Image} Image with LUT applied
+		 */
+		const applyLut =  (baseImageCtx, intensity, lut, baselineLut, alpha) => {
+			const width = baseImageCtx.canvas.width;
+			const height = baseImageCtx.canvas.height;
+
+			const baseImageData = baseImageCtx.getImageData(
+				0,
+				0,
+				width,
+				height
+			);
+
+			const iData = baseImageData.data;
+			const lData = lutToData(baselineLut, lut, intensity);
+			let aData = null;
+
+			if (alpha) {
+				const alphaCanvas = document.createElement('canvas');
+				alphaCanvas.width = width;
+				alphaCanvas.height = height;
+				alphaCanvas.getContext('2d').drawImage(alpha, 0, 0, width, height);
+				aData = alphaCanvas.getContext('2d').getImageData(0, 0, width, height).data;
+			}
+
+			for (let i = 0, l = iData.length; i < l; i += 4) {
+				let r, g, b;
+
+				r = Math.floor(iData[i] / 4);
+				g = Math.floor(iData[i + 1] / 4);
+				b = Math.floor(iData[i + 2] / 4);
+
+				let lutX, lutY, lutIndex;
+
+				lutX = b % 8 * 64 + r;
+				lutY = Math.floor(b / 8) * 64 + g;
+				lutIndex = (lutY * lut.naturalWidth + lutX) * 4;
+
+				let lutR, lutG, lutB, lutA;
+
+				lutR = lData[lutIndex];
+				lutG = lData[lutIndex + 1];
+				lutB = lData[lutIndex + 2];
+
+				iData[i] = lutR;
+				iData[i + 1] = lutG;
+				iData[i + 2] = lutB;
+
+				lutA = alpha ? aData[i] : 255; //Grayscale mask, all RBG values are the same.
+				iData[i + 3] = lutA;
+			}
+
+			return baseImageData;
+		};
+
+
 
 		if (!this.filters) {
 			throw new Error('loadEffects() should be executed prior to call process() function');
 		}
 
-		console.log(image.naturalHeight, image.naturalWidth);
 
 		//this.reset();
 
+		let {width, height} = image;
+		const horizontal = width > height;
+		let scale = 1;
+		if (horizontal) {
+			scale = Math.min(1,this.maxSize.width / width);
+		} else {
+			scale = Math.min(1,this.maxSize.height / height);
+		}
+
+		width = (width * scale);
+		height = (height * scale);
+
+
+
+		this.gradingCanvas.width = width;
+		this.gradingCanvas.height = height;
+		this.gradingContext.drawImage(image, 0, 0, width, height);
+
+
+
 		const imageCanvas = document.createElement('canvas');
-		imageCanvas.width = image.naturalWidth;
-		imageCanvas.height = image.naturalHeight;
+		imageCanvas.width = width;
+		imageCanvas.height = height;
+
 
 		const baseImageCtx = imageCanvas.getContext('2d');
 		baseImageCtx.drawImage(image, 0, 0);
+
 
 		const intens = INTENSITY_MAP[intensity];
 
@@ -282,8 +310,7 @@ class SpecialEffects {
 
 			const layers = effect.data.map(filter => {
 
-				console.log('fl', filter);
-				return this.applyLut(
+				return applyLut(
 					baseImageCtx,
 					intens,
 					filter.lutImage,
@@ -303,7 +330,12 @@ class SpecialEffects {
 			}
 
 			this.gradingCanvas.getContext('2d').putImageData(composedImageData, 0, 0);
-			return new Promise(resolve => resolve(this.gradingCanvas.toDataURL()));
+			const imgData = this.gradingCanvas.toDataURL();
+			callback({
+				effect,
+				image: imgData
+			});
+
 
 		}
 	}
