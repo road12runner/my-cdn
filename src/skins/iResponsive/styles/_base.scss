@@ -1,13 +1,31 @@
-$pinkColor: pink;
 
 .aam-designer-init {
-    border: 1px solid $pinkColor;
+    font-family: inherit;
+    font-size: inherit;
+
     max-width: 743px;
+    min-width: 320px;
+
     max-height: 450px;
     width: 100%;
     height: 450px;
 
     box-sizing: border-box;
+
+    border-radius: 4px;
+    box-shadow: -1px 0 10px rgba(50, 50, 50, 0.25);
+    padding: 4px;
+
+    *, *::after, *::before {
+        margin: 0;
+        padding: 0;
+        outline: none;
+        box-sizing: inherit;
+        font-family: inherit;
+        font-weight: inherit;
+    }
+
+
 
     .main-container {
         width: 100%;

@@ -1,7 +1,7 @@
 import CanvasObject from './CanvasObject';
 import { roundRect, allInside } from './canvas-helper';
 
-import {STOCK_IMAGE, CUSTOM_IMAGE} from './itemTypes';
+import {STOCK_IMAGE, CUSTOM_IMAGE, IMAGE} from './itemTypes';
 
 import RedCros from '../../img/red-cross.png';
 
@@ -16,7 +16,8 @@ class ImageItem extends CanvasObject {
 		this.width = options.width || 50;
 		this.height = options.height || 50;
 
-		this.layerType = STOCK_IMAGE;
+		this.layerType = options.layerType || STOCK_IMAGE;
+		this.type = options.type || IMAGE;
 
 		this.id = image.id;
 
@@ -44,14 +45,21 @@ class ImageItem extends CanvasObject {
 		const img = new Image();
 		img.crossOrigin = 'Anonymous';
 		img.src = url;
-		img.onload = () => {
-			this.image = img;
-			this.selected = true;
-			this.originPoint = {
-				x: this.coverageArea.x + this.width / 2,
-				y: this.coverageArea.y + this.height / 2
+
+		return new Promise( resolve => {
+			img.onload = () => {
+				this.image = img;
+				this.selected = true;
+				this.originPoint = {
+					x: this.coverageArea.x + this.width / 2,
+					y: this.coverageArea.y + this.height / 2
+				};
+
+				resolve(this.image)
 			};
-		};
+
+		});
+
 	}
 
 	render (ctx) {

@@ -57,6 +57,8 @@ class App {
 			if (AppSettings.designerSettings.Galleries.Enabled === true && AppSettings.designerSettings.Galleries.URL) {
 			}
 
+
+
 			return response;
 		}
 
@@ -89,7 +91,14 @@ class App {
 
 		// call chain of requests
 		loadDesigner().then(createClient).then(loadGalleries).then(loadLanguage).then( () => {
+
+			if (AppSettings.isTouchDevice()) {
+				this.rootElement.classList.add('mobile');
+			}
+
 			console.log('show maincontainer');
+
+
 			const mainContainer = new MainContainer(this.rootElement);
 			mainContainer.show();
 		})

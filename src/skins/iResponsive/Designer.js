@@ -3,6 +3,8 @@ import template from './templates/designer.tmpl';
 import Canvas from '../../core/canvas/Canvas';
 import GalleryManager from '../../core/gallery/GaleryManager';
 import SimpleGallery from '../../core/gallery/SimpleGallery';
+import Dropdown  from '../../core/gallery/Dropdown';
+
 import Upload from '../../core/lib/Upload';
 
 import AppSettings from '../../core/AppSettings';
@@ -13,10 +15,13 @@ import { clearElement } from '../../core/utils';
 
 import * as api from '../../core/net/api';
 import { LAYER_TYPE } from '../../core/constants';
-import { DOODLE, STOCK_IMAGE, CUSTOM_IMAGE } from '../../core/canvas/itemTypes';
+import { DOODLE, STOCK_IMAGE, CUSTOM_IMAGE, TEXT, LOGO } from '../../core/canvas/itemTypes';
 
 
 import SpecialEffects, {SPECIAL_EFFECTS_INTENSITY} from '../../core/canvas/SpecialEffects'
+
+import * as mobilenet from '@tensorflow-models/mobilenet';
+
 
 
 //TODO get rig of jquery
@@ -27,6 +32,7 @@ window.$ = window.jQuery = jQuery;
 import '../../core/lib/spectrum.scss';
 
 import '../../core/lib/color-picker';
+import ImageItem from '../../core/canvas/ImageItem';
 
 class Designer {
 	constructor (parentElement) {
@@ -49,27 +55,61 @@ class Designer {
 			imageUrl: this.galleryManager.galleries[0].images[0].LargeImage,
 			onCardCoverage: e => this.handleTestCoverage(e),
 			touchDevice: AppSettings.isTouchDevice(),
-			//margin: 100,
-			scale: 2,
+			margin: 30,
+			//scale: 2,
 			isResponsible: true
 		});
 
 		console.log(AppSettings);
 
-		this.showClipArts();
+		//this.showClipArts();
 
 		this.handleControls();
 
-		// setTimeout( () => {
-		// 	this.renderPreview();
-		// }, 1000);
+		this.showGalleries();
+
+		this.renderCardUploader();
+
+		localize(this.el);
+
+
+		function localize( el ) {
+
+			if (el.getAttribute) {
+				const langToken = el.getAttribute('data-ref');
+				if (langToken) {
+					el.innerText = AppSettings.Language[langToken] || '';
+				}
+			}
+			if (el.childNodes) {
+				el.childNodes.forEach( node =>  localize(node));
+			}
+
+		}
+
+
+		// const img  = new Image();
+		// img.crossOrigin = 'Anonymous';
+		// img.src = this.galleryManager.galleries[0].images[0].LargeImage;
+		// img.onload = () => {
+		// 	this.el.parentElement.parentElement.appendChild(img);
+		// 	console.log(mobilenet);
+		//
+			mobilenet.load().then( model => {
+
+				this.tensorFlowModel = model;
+
+			});
+
+
+
 
 	}
 
 	handleTestCoverage (result) {
 
 		const errorContainer = this.el.querySelector('#error-message');
-		errorContainer.innerHTML = result ? '' : ' out of border ';
+		//errorContainer.innerHTML = result ? '' : ' out of border ';
 
 	}
 
@@ -78,7 +118,7 @@ class Designer {
 	}
 
 	showClipArts () {
-		const clipartContainer = this.el.querySelector('.cliparts');
+		const clipartContainer = this.el.parentElement.querySelector('.cliparts');
 		let cliparts = [];
 		this.galleryManager.getClipArts().forEach(item => {
 			cliparts = cliparts.concat(item.images);
@@ -94,6 +134,106 @@ class Designer {
 		console.log(clipartContainer, cliparts);
 	}
 
+
+	showGalleries() {
+
+		const onGalleryImageSelected = (id) => {
+			console.log('selected image', id);
+		};
+		const galleryContainer = this.el.querySelector('.toolbox--image-selection--gallery--container');
+
+		const gallery = new SimpleGallery(galleryContainer, {
+			showImageAsChild: true,
+			dragable: true,
+			onImageSelected: id => onGalleryImageSelected(id)
+		});
+
+
+		const gallerySelector = this.el.querySelector('#gallery-selector');
+		const galleries = this.galleryManager.getStandardImages().map( gallery => ({id: gallery.Id, name: gallery.Name}));
+		const selector = new Dropdown(gallerySelector, galleries, {onItemSelected : (id)=> {
+				this.galleryManager.selectedGalleryId = id;
+				gallery.loadImages( this.galleryManager.getSelectedGallery());
+			}});
+
+
+
+
+
+
+
+
+	}
+
+
+	renderCardUploader() {
+		this.el.querySelector('#btn-card-image-upload').onclick = () => {
+
+			const input = this.el.querySelector('#file-upload');
+
+
+			const uploadInfo = this.el.querySelector('.toolbox--image-selection--upload--info');
+
+			const onComplete =  async (res) => {
+				console.log('complete', res);
+
+				uploadInfo.innerHTML = '';
+
+				const img = await this.canvas.setCardImage(res.result.Id, res.result.Url);
+
+
+				uploadInfo.innerHTML = 'Identifying...';
+
+				if (this.tensorFlowModel) {
+
+
+					this.tensorFlowModel.classify( img).then(predictions => {
+						console.log('Predictions', predictions);
+
+						let result = '';
+						for( const predictionEntry of predictions) {
+							const probability = Math.floor( predictionEntry.probability * 100);
+							result += `${predictionEntry.className} - ${probability}%<br>`;
+						}
+
+
+						uploadInfo.innerHTML = result;
+					})
+
+				}
+
+
+
+
+			};
+
+			const onProgress = ({percentComplete}) => {
+				if (percentComplete) {
+					uploadInfo.innerHTML = `Uploading... ${percentComplete}`;
+				}
+
+			};
+
+			//todo  show loading bar
+
+			const upload = new Upload(api.getImageUploadUrl(AppSettings.handoverKey, AppSettings.clientId, LAYER_TYPE.LOGO),
+				input,
+				{
+					autoUpload: true,
+					callbacks: {
+						onComplete,
+						onProgress
+					}
+			});
+
+
+			uploadInfo.innerHTML = 'Uploading...';
+			input.click();
+
+		}
+
+	}
+
 	clipartSelected (id) {
 
 		const imageId = +id;
@@ -104,205 +244,278 @@ class Designer {
 
 	handleControls () {
 		const DEFAULT_MOVEMENT = 2;
-		this.el.querySelector('#btn-up').addEventListener('click', () => {
-			this.canvas.moveUp(DEFAULT_MOVEMENT);
-		});
+		const TOOLBOX_BUTTON_ACTIVE = 'active';
 
-		this.el.querySelector('#btn-down').addEventListener('click', () => {
-			this.canvas.moveDown(DEFAULT_MOVEMENT);
-		});
+		function toggleClassName(el, className) {
+			el.classList.add(className);
+		}
 
-		this.el.querySelector('#btn-left').addEventListener('click', () => {
-			this.canvas.moveLeft(DEFAULT_MOVEMENT);
-		});
+		const galleryButton  = this.el.querySelector('.toolbox--button--gallery');
+		const uploadButton = this.el.querySelector('.toolbox--button--upload');
 
-		this.el.querySelector('#btn-right').addEventListener('click', () => {
-			this.canvas.moveRight(DEFAULT_MOVEMENT);
-		});
+		const galleryContainer = this.el.querySelector('.toolbox--image-selection--gallery');
+		const uploadContainer = this.el.querySelector('.toolbox--image-selection--upload');
 
-		this.el.querySelector('#btn-rotate-left').addEventListener('click', () => {
-			this.canvas.rotate(-DEFAULT_MOVEMENT);
-		});
+		galleryButton.onclick= () => {
+			galleryButton.classList.add(TOOLBOX_BUTTON_ACTIVE);
+			uploadButton.classList.remove(TOOLBOX_BUTTON_ACTIVE);
 
-		this.el.querySelector('#btn-rotate-right').addEventListener('click', () => {
-			this.canvas.rotate(DEFAULT_MOVEMENT);
-		});
+			galleryContainer.classList.add(TOOLBOX_BUTTON_ACTIVE);
+			uploadContainer.classList.remove(TOOLBOX_BUTTON_ACTIVE);
 
-		this.el.querySelector('#btn-flip').addEventListener('click', () => {
-			this.canvas.flip();
-		});
-
-		this.el.querySelector('#btn-submit').addEventListener('click', () => this.submit());
-
-		this.el.querySelector('#btn-preview').addEventListener('click', () => {
-			this.renderPreview();
-		});
-
-		this.el.querySelector('#btn-text').onclick = () => {
-			const text = this.el.querySelector('#text-field').value;
-			this.canvas.addTextItem('test', text);
-		};
-
-		this.el.querySelector('#btn-text-bold').onclick = () => {
-			const obj = this.canvas.getSelectedObject();
-			if (obj && obj.type === 'Text') {
-				const font = obj.getFontStyle();
-				font.bold = !font.bold;
-				obj.setFontStyle(font);
-			}
 
 		};
 
-		this.el.querySelector('#btn-text-italic').onclick = () => {
-			const obj = this.canvas.getSelectedObject();
-			if (obj && obj.type === 'Text') {
-				const font = obj.getFontStyle();
-				font.italic = !font.italic;
-				obj.setFontStyle(font);
-			}
-		};
 
-		this.el.querySelector('#btn-text-shadow').onclick = () => {
-			const obj = this.canvas.getSelectedObject();
-			if (obj && obj.type === 'Text') {
-				const font = obj.getFontStyle();
-				font.shadow = !font.shadow;
-				obj.setFontStyle(font);
-			}
-		};
+		uploadButton.onclick= () => {
+			galleryButton.classList.remove(TOOLBOX_BUTTON_ACTIVE);
+			uploadButton.classList.add(TOOLBOX_BUTTON_ACTIVE);
 
-		this.el.querySelector('#btn-text-stroke').onclick = () => {
-
-			const obj = this.canvas.getSelectedObject();
-			if (obj && obj.type === 'Text') {
-				const font = obj.getFontStyle();
-				font.stroke = !font.stroke;
-				obj.setFontStyle(font);
-			}
+			galleryContainer.classList.remove(TOOLBOX_BUTTON_ACTIVE);
+			uploadContainer.classList.add(TOOLBOX_BUTTON_ACTIVE);
 
 		};
 
-		this.el.querySelector('#text-field').oninput = (e) => {
-			//this.canvas.setText(e.target.value);
-			const obj = this.canvas.getSelectedObject();
-			if (obj && obj.type === 'Text') {
-				obj.setText(e.target.value);
-			}
 
-		};
-
-		$('#text-color').spectrum({
-			containerClassName: 'awesome',
-			move: (color) => {
-
-				const obj = this.canvas.getSelectedObject();
-				if (obj && obj.type === 'Text') {
-					const font = obj.getFontStyle();
-					font.color = color.toHexString();
-					obj.setFontStyle(font);
-				}
-
-			}
-		});
-
-		var doodleColor = '#ffffff';
-		$('#doodle-color').spectrum({
-			color: doodleColor,
-			containerClassName: 'awesome',
-			move: (color) => {
-
-				doodleColor = color.toHexString();
-
-				const obj = this.canvas.getSelectedObject();
-				if (obj && obj.type === DOODLE) {
-					obj.setLineColor(doodleColor);
-				}
-
-			}
-		});
-
-		this.el.querySelector('#btn-add-doodle').onclick = () => {
-			this.canvas.addDoodleItem({
-				lineWidth: this.el.querySelector('#doodle-line-width').value,
-				lineColor: doodleColor
-			});
-		};
-
-		this.el.querySelector('#btn-doodle-clear').onclick = () => {
-			const obj = this.canvas.getSelectedObject();
-			if (DOODLE === obj.type) {
-				obj.clear();
-			}
-		};
-
-		this.el.querySelector('#btn-doodle-undo').onclick = () => {
-			const obj = this.canvas.getSelectedObject();
-			if (DOODLE === obj.type) {
-				obj.undo();
-			}
-		};
-
-		this.el.querySelector('#doodle-line-width').oninput = (e) => {
-			const obj = this.canvas.getSelectedObject();
-			if (obj && obj.type === DOODLE) {
-				obj.setLineWidth(+e.target.value);
-			}
-		};
-
-		const input = this.el.querySelector('#file-upload');
-
-		const onComplete = (res) => {
-			console.log(res);
-
-			const {Id, Url} = res.result;
-			const obj = this.canvas.getSelectedObject();
-
-			obj.setImage(Id, Url, CUSTOM_IMAGE);
-
-		};
-
-		const onProgress = (res) => {
-			console.log('progress', res)
-		};
-
-		const upload = new Upload(api.getImageUploadUrl(AppSettings.handoverKey, AppSettings.clientId, LAYER_TYPE.CARD),
-			input,
-			{
-				autoUpload: true,
-				callbacks: {
-					onComplete,
-					onProgress
-				}
-			});
-
-
-		this.el.querySelector('#btn-reset').onclick = () =>  {
-			const obj = this.canvas.getSelectedObject();
-			if (obj) {
-				obj.reset();
-			}
-		};
-
-		this.el.querySelector('#btn-filters').onclick = () => {
-			console.log('filters');
-			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.LOW;
-			this.renderFilters(this.filterIntensity);
-		};
-
-		this.el.querySelector('#btn-filters-intensity-low').onclick = () => {
-			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.LOW;
-			this.renderFilters(this.filterIntensity);
-		};
-
-		this.el.querySelector('#btn-filters-intensity-medium').onclick = () => {
-			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.MEDIUM;
-			this.renderFilters(this.filterIntensity);
-		};
-
-		this.el.querySelector('#btn-filters-intensity-high').onclick = () => {
-			this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.HIGH;
-			this.renderFilters(this.filterIntensity);
-		};
+		// this.el.querySelector('#btn-up').addEventListener('click', () => {
+		// 	this.canvas.moveUp(DEFAULT_MOVEMENT);
+		// });
+		//
+		// this.el.querySelector('#btn-down').addEventListener('click', () => {
+		// 	this.canvas.moveDown(DEFAULT_MOVEMENT);
+		// });
+		//
+		// this.el.querySelector('#btn-left').addEventListener('click', () => {
+		// 	this.canvas.moveLeft(DEFAULT_MOVEMENT);
+		// });
+		//
+		// this.el.querySelector('#btn-right').addEventListener('click', () => {
+		// 	this.canvas.moveRight(DEFAULT_MOVEMENT);
+		// });
+		//
+		// this.el.querySelector('#btn-rotate-left').addEventListener('click', () => {
+		// 	this.canvas.rotate(-DEFAULT_MOVEMENT);
+		// });
+		//
+		// this.el.querySelector('#btn-rotate-right').addEventListener('click', () => {
+		// 	this.canvas.rotate(DEFAULT_MOVEMENT);
+		// });
+		//
+		// this.el.querySelector('#btn-flip').addEventListener('click', () => {
+		// 	this.canvas.flip();
+		// });
+		//
+		// this.el.querySelector('#btn-submit').addEventListener('click', () => this.submit());
+		//
+		// this.el.querySelector('#btn-preview').addEventListener('click', () => {
+		// 	this.renderPreview();
+		// });
+		//
+		// this.el.querySelector('#btn-text').onclick = () => {
+		// 	const text = this.el.querySelector('#text-field').value;
+		// 	this.canvas.addTextItem('test', text);
+		// };
+		//
+		// this.el.querySelector('#btn-text-bold').onclick = () => {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj && obj.type === TEXT) {
+		// 		const font = obj.getFontStyle();
+		// 		font.bold = !font.bold;
+		// 		obj.setFontStyle(font);
+		// 	}
+		//
+		// };
+		//
+		// this.el.querySelector('#btn-text-italic').onclick = () => {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj && obj.type === TEXT) {
+		// 		const font = obj.getFontStyle();
+		// 		font.italic = !font.italic;
+		// 		obj.setFontStyle(font);
+		// 	}
+		// };
+		//
+		// this.el.querySelector('#btn-text-shadow').onclick = () => {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj && obj.type === TEXT) {
+		// 		const font = obj.getFontStyle();
+		// 		font.shadow = !font.shadow;
+		// 		obj.setFontStyle(font);
+		// 	}
+		// };
+		//
+		// this.el.querySelector('#btn-text-stroke').onclick = () => {
+		//
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj && obj.type === TEXT) {
+		// 		const font = obj.getFontStyle();
+		// 		font.stroke = !font.stroke;
+		// 		obj.setFontStyle(font);
+		// 	}
+		//
+		// };
+		//
+		// this.el.querySelector('#text-field').oninput = (e) => {
+		// 	//this.canvas.setText(e.target.value);
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj && obj.type === TEXT) {
+		// 		obj.setText(e.target.value);
+		// 	}
+		//
+		// };
+		//
+		// $('#text-color').spectrum({
+		// 	containerClassName: 'awesome',
+		// 	move: (color) => {
+		//
+		// 		const obj = this.canvas.getSelectedObject();
+		// 		if (obj && obj.type === TEXT) {
+		// 			const font = obj.getFontStyle();
+		// 			font.color = color.toHexString();
+		// 			obj.setFontStyle(font);
+		// 		}
+		//
+		// 	}
+		// });
+		//
+		// var doodleColor = '#ffffff';
+		// $('#doodle-color').spectrum({
+		// 	color: doodleColor,
+		// 	containerClassName: 'awesome',
+		// 	move: (color) => {
+		//
+		// 		doodleColor = color.toHexString();
+		//
+		// 		const obj = this.canvas.getSelectedObject();
+		// 		if (obj && obj.type === DOODLE) {
+		// 			obj.setLineColor(doodleColor);
+		// 		}
+		//
+		// 	}
+		// });
+		//
+		// this.el.querySelector('#btn-add-doodle').onclick = () => {
+		// 	this.canvas.addDoodleItem({
+		// 		lineWidth: this.el.querySelector('#doodle-line-width').value,
+		// 		lineColor: doodleColor
+		// 	});
+		// };
+		//
+		// this.el.querySelector('#btn-doodle-clear').onclick = () => {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (DOODLE === obj.type) {
+		// 		obj.clear();
+		// 	}
+		// };
+		//
+		// this.el.querySelector('#btn-doodle-undo').onclick = () => {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (DOODLE === obj.type) {
+		// 		obj.undo();
+		// 	}
+		// };
+		//
+		// this.el.querySelector('#doodle-line-width').oninput = (e) => {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj && obj.type === DOODLE) {
+		// 		obj.setLineWidth(+e.target.value);
+		// 	}
+		// };
+		//
+		// const input = this.el.querySelector('#file-upload');
+		//
+		// const onComplete = (res) => {
+		// 	console.log(res);
+		//
+		// 	const {Id, Url} = res.result;
+		// 	const obj = this.canvas.getSelectedObject();
+		//
+		// 	obj.setImage(Id, Url, CUSTOM_IMAGE);
+		//
+		// };
+		//
+		// const onProgress = (res) => {
+		// 	console.log('progress', res)
+		// };
+		//
+		// const upload = new Upload(api.getImageUploadUrl(AppSettings.handoverKey, AppSettings.clientId, LAYER_TYPE.CARD),
+		// 	input,
+		// 	{
+		// 		autoUpload: true,
+		// 		callbacks: {
+		// 			onComplete,
+		// 			onProgress
+		// 		}
+		// 	});
+		//
+		//
+		// this.el.querySelector('#btn-reset').onclick = () =>  {
+		// 	const obj = this.canvas.getSelectedObject();
+		// 	if (obj) {
+		// 		obj.reset();
+		// 	}
+		// };
+		//
+		// this.el.querySelector('#btn-filters').onclick = () => {
+		// 	console.log('filters');
+		// 	this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.LOW;
+		// 	this.renderFilters(this.filterIntensity);
+		// };
+		//
+		// this.el.querySelector('#btn-filters-intensity-low').onclick = () => {
+		// 	this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.LOW;
+		// 	this.renderFilters(this.filterIntensity);
+		// };
+		//
+		// this.el.querySelector('#btn-filters-intensity-medium').onclick = () => {
+		// 	this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.MEDIUM;
+		// 	this.renderFilters(this.filterIntensity);
+		// };
+		//
+		// this.el.querySelector('#btn-filters-intensity-high').onclick = () => {
+		// 	this.filterIntensity = SPECIAL_EFFECTS_INTENSITY.HIGH;
+		// 	this.renderFilters(this.filterIntensity);
+		// };
+		//
+		//
+		// this.el.querySelector('#btn-add-logo').onclick = () => {
+		// 	console.log('add logo');
+		//
+		// 	const input = this.el.querySelector('#logo-file');
+		//
+		// 	const onComplete = (res) => {
+		// 		console.log('complete', res);
+		//
+		// 		this.canvas.addImageItem(res.result.Id, res.result.Url,{type: LOGO});
+		//
+		// 		// const {Id, Url} = res.result;
+		// 		// const obj = this.canvas.getSelectedObject();
+		// 		//
+		// 		// obj.setImage(Id, Url, CUSTOM_IMAGE);
+		//
+		// 	};
+		//
+		// 	const onProgress = (res) => {
+		// 		console.log('progress', res)
+		// 	};
+		//
+		// 	const upload = new Upload(api.getImageUploadUrl(AppSettings.handoverKey, AppSettings.clientId, LAYER_TYPE.LOGO),
+		// 		input,
+		// 		{
+		// 			autoUpload: true,
+		// 			callbacks: {
+		// 				onComplete,
+		// 				onProgress
+		// 			}
+		// 	});
+		//
+		// 	input.click();
+		//
+		//
+		//
+		//
+		//
+		// }
 	}
 
 	renderFilters(filterIntensity) {

@@ -8,7 +8,7 @@ import { roundRect, allInside } from './canvas-helper';
 import RedCros from '../../img/red-cross.png';
 
 import '../../core/lib/canvasToBlob';
-
+import {TEXT} from './itemTypes';
 function convertFont (fontStyle = {}) {
 	const {height, name} = fontStyle;
 	let font = `${height}px ${name}`;
@@ -20,8 +20,8 @@ function convertFont (fontStyle = {}) {
 	}
 
 	return font;
-}
 
+}
 function measureTextWidth (text, fontStyle, canvasContext) {
 
 	canvasContext.font = convertFont(fontStyle);
@@ -41,7 +41,7 @@ class TextItem extends CanvasObject {
 		this.coverageArea = options.coverageArea;
 		this.templateArea = options.allowedArea;
 		this.layerType = 'CustomImageLayer';
-		this.type = 'Text';
+		this.type = TEXT;
 
 		this.fontStyle = options.fontStyle || {
 			name: 'Comic Sans MS',

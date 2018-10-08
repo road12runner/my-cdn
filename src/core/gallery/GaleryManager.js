@@ -14,7 +14,6 @@ class  GalleryManager {
 			// If null, set singletonInstance to this Class
 			singletonInstance = this;
 			this.isClipArtEnabled = false;
-			this.selectedGalleryId = 814; //TODO fixed
 		}
 
 		return singletonInstance;
@@ -49,6 +48,13 @@ class  GalleryManager {
 
 						if (count === this.galleries.length) {
 							// all galleries has been loaded
+							if (!this.selectedGalleryId) {
+								const  standartGalleries = this.getStandardImages();
+								if (standartGalleries.length > 0) {
+									this.selectedGalleryId = standartGalleries[0].Id;
+								}
+							}
+
 							resolve();
 						}
 					});
@@ -69,6 +75,18 @@ class  GalleryManager {
 	getClipArts() {
 		return this.galleries.filter( el => el.ImageType === CLIPART_IMAGE_TYPE);
 	};
+
+	getStandardImages() {
+		return this.galleries.filter( el => el.ImageType === STANDARD_IMAGE_TYPE);
+	};
+
+	getSelectedGallery() {
+		if (this.selectedGalleryId) {
+			return this.galleries.find( el => el.Id === this.selectedGalleryId).images;
+		}
+		return [];
+	}
+
 
 	getImageById(id) {
 		let image = null;

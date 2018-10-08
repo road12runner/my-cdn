@@ -1,0 +1,100 @@
+.aam-designer-init {
+
+    div.aam-dropdown {
+        /* Size and position */
+        position: relative;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 10px;
+        margin-top: 10px;
+
+        /* Styles */
+        background: $color-gray;
+        border-radius: 7px;
+        border: 1px solid $color-gray;
+
+        cursor: pointer;
+        outline: none;
+
+        /*show in foreground*/
+        z-index: 1000;
+
+        /* Font settings */
+
+        color: $dark-color;
+        font-size: 1.1em;
+
+        span:after {
+            content: "";
+            width: 0;
+            height: 0;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            margin-top: -3px;
+            border-width: 6px 6px 0 6px;
+            border-style: solid;
+            border-color: #888 transparent;
+        }
+
+        .dropdown {
+            /* Size & position */
+            position: absolute;
+            top: 108%;
+            left: 0;
+            right: 0;
+            z-index: 100;
+
+            /* Styles */
+            background: white;
+            border-radius: inherit;
+            border: 1px solid rgba(0,0,0,0.17);
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            font-weight: normal;
+            transition: all 0.5s ease-in;
+            list-style: none;
+
+            /* Hiding */
+            opacity: 0;
+            pointer-events: none;
+
+            /*items*/
+            li {
+                a {
+                    display: block;
+                    padding: 10px;
+                    text-decoration: none;
+                    color: $dark-color;
+                    border-bottom: 1px solid #e6e8ea;
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,1);
+                    transition: all 0.3s ease-out;
+                    font-size: 1em;
+                    background-color: #fff;
+
+                    &:hover {
+                        background: #f3f8f8;
+                    }
+
+                }
+                &:first-of-type a {
+                    border-radius: 7px 7px 0 0;
+                }
+                &:last-of-type a {
+                    border-radius: 0 0 7px 7px;
+                    border: none;
+                }
+
+            }
+
+        }
+
+
+        &.active {
+            .dropdown {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+    }
+}
+

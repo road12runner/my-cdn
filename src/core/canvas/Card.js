@@ -77,17 +77,26 @@ class Card extends CanvasObject {
 		this.id = id;
 		this.layerType = imageType;
 
+
+
+
 		const img = new Image();
 		img.crossOrigin = 'Anonymous';
 		img.src = url;
-		img.onload = () => {
-			this.image = img;
-			// always in center on canvas
-			this.originPoint = {
-				x: 0,
-				y: 0
-			}
-		};
+
+		return new Promise( resolve => {
+			img.onload = () => {
+				this.image = img;
+				// always in center on canvas
+				this.originPoint = {
+					x: 0,
+					y: 0
+				};
+
+				resolve(this.image)
+			};
+
+		});
 	}
 	
 	render(ctx) {

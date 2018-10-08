@@ -9,17 +9,17 @@ export const SPECIAL_EFFECTS_INTENSITY = {
 
 
 export const AVAILABLE_EFFECTS = [
-	//{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png', alpha: 'mask.jpg'}]},
-	{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png'}]},
-	{id: 1, name: 'inkwell', caption: 'Inkwell', data: [{lut: 'inkwell_100.png', baselineLut: 'inkwell_0.png'}]},
-	{id: 2, name: 'clarendon', caption: 'Clarendon', data:[{lut: 'clarendon_100.png'}]},
-	{id: 3, name: 'gingham', caption: 'Gingham', data: [{lut: 'gingham_100.png'}]},
-	{id: 4, name: 'juno', caption: 'Juno', data: [{lut: 'juno_100.png'}]},
-	{id: 5, name: 'lark', caption: 'Lark', data: [{lut: 'lark_100.png'}]},
-	{id: 6, name: 'lofi', caption: 'Lofi', data: [{lut: 'lofi_100.png'}]},
-	{id: 7, name: 'ludwig', caption: 'Ludwig', data: [{lut: 'ludwig_100.png'}]},
-	{id: 8, name: 'valencia', caption: 'Valencia', data: [{lut: 'valencia_100.png'}]},
-	{id: 9, name: 'xpro2', caption: 'Xpro2', data: [{lut: 'xpro2_100.png'}]}
+	{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png', alpha: 'mask.jpg'}]},
+	//{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png'}]},
+	// {id: 1, name: 'inkwell', caption: 'Inkwell', data: [{lut: 'inkwell_100.png', baselineLut: 'inkwell_0.png'}]},
+	// {id: 2, name: 'clarendon', caption: 'Clarendon', data:[{lut: 'clarendon_100.png'}]},
+	// {id: 3, name: 'gingham', caption: 'Gingham', data: [{lut: 'gingham_100.png'}]},
+	// {id: 4, name: 'juno', caption: 'Juno', data: [{lut: 'juno_100.png'}]},
+	// {id: 5, name: 'lark', caption: 'Lark', data: [{lut: 'lark_100.png'}]},
+	// {id: 6, name: 'lofi', caption: 'Lofi', data: [{lut: 'lofi_100.png'}]},
+	// {id: 7, name: 'ludwig', caption: 'Ludwig', data: [{lut: 'ludwig_100.png'}]},
+	// {id: 8, name: 'valencia', caption: 'Valencia', data: [{lut: 'valencia_100.png'}]},
+	// {id: 9, name: 'xpro2', caption: 'Xpro2', data: [{lut: 'xpro2_100.png'}]}
 ];
 
 
@@ -111,7 +111,8 @@ class SpecialEffects {
 		this.publicPath = opts.publicPath || '/filters/';
 		this.gradingCanvas = document.createElement('canvas');
 		this.gradingContext = this.gradingCanvas.getContext('2d');
-		this.maxSize = opts.maxSize || {width: 700, height: 700};
+
+		this.maxSize = opts.maxSize || {width: 720, height: 1500};
 
 		this.baselineLut = 'baseline_lut.png';
 
@@ -185,7 +186,7 @@ class SpecialEffects {
 		filter.baselineLutImage = await loadAsset(filter.baselineLut || this.baselineLut);
 		filter.lutImage = await loadAsset(filter.lut);
 		if (filter.alpha) {
-			filter.alphaImage = await loadAsset(filter.lut);
+			filter.alphaImage = await loadAsset(filter.alpha);
 		}
 
 		console.log('loaded filter', filter);
@@ -213,9 +214,9 @@ class SpecialEffects {
 		 *
 		 * @returns {Image} Image with LUT applied
 		 */
-		const applyLut =  (baseImageCtx, intensity, lut, baselineLut, alpha) => {
-			const width = baseImageCtx.canvas.width;
-			const height = baseImageCtx.canvas.height;
+		const applyLut =  (baseImageCtx, {width, height}, intensity, lut, baselineLut, alpha) => {
+			// const width = baseImageCtx.canvas.width;
+			// const height = baseImageCtx.canvas.height;
 
 			const baseImageData = baseImageCtx.getImageData(
 				0,
@@ -225,6 +226,9 @@ class SpecialEffects {
 			);
 
 			const iData = baseImageData.data;
+
+			const testData = [...iData];
+
 			const lData = lutToData(baselineLut, lut, intensity);
 			let aData = null;
 
@@ -263,6 +267,10 @@ class SpecialEffects {
 				iData[i + 3] = lutA;
 			}
 
+			if (alpha) {
+				console.log(JSON.stringify(testData) === JSON.stringify(baseImageData.data));
+			}
+
 			return baseImageData;
 		};
 
@@ -299,7 +307,6 @@ class SpecialEffects {
 		imageCanvas.width = width;
 		imageCanvas.height = height;
 
-
 		const baseImageCtx = imageCanvas.getContext('2d');
 		baseImageCtx.drawImage(image, 0, 0);
 
@@ -312,6 +319,7 @@ class SpecialEffects {
 
 				return applyLut(
 					baseImageCtx,
+					{width, height},
 					intens,
 					filter.lutImage,
 					filter.baselineLutImage,

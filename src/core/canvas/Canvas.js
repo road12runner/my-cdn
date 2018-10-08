@@ -9,7 +9,7 @@ import AppSettings from '../AppSettings';
 import { getEventPosition } from './canvas-helper';
 import Hammer from 'hammerjs';
 import * as api from '../net/api';
-import {IMAGE, DOODLE, TEXT, CARD} from './itemTypes';
+import { IMAGE, DOODLE, TEXT, CARD, CUSTOM_IMAGE, LOGO, STOCK_IMAGE } from './itemTypes';
 
 
 const  getTouchPos =(e) => {
@@ -320,6 +320,17 @@ class Canvas {
 
 	}
 
+
+	// return promise with image when image is loaded
+	setCardImage(id, url) {
+		return this.card.setImage(id, url);
+	}
+
+	getCardImage () {
+		return this.card.image;
+	}
+
+
 	getSelectedObject () {
 		return this.card.selected ? this.card : this.items.find(item => item.selected === true);
 	}
@@ -367,6 +378,10 @@ class Canvas {
 	setImage (imageId, imageUrl) {
 		this.card.setImage(imageId, imageUrl);
 	}
+
+
+
+
 
 	dragOver (e) {
 		e.preventDefault();
@@ -420,8 +435,20 @@ class Canvas {
 			allowedArea,
 			initialPosition: options.initialPosition,
 			width: 50 * canvasScale,
-			height: 50 * canvasScale
+			height: 50 * canvasScale,
+			type: options.type,
+			layerType : options.type === LOGO ? CUSTOM_IMAGE : ST
 		});
+
+		if (options.type) {
+			cardItem.type = options.type;
+			if (options.type === LOGO) {
+				cardItem.layerType = CUSTOM_IMAGE;
+			}
+		}
+
+
+
 		this.items.push(cardItem);
 
 		//this.removeItems();
@@ -525,7 +552,17 @@ class Canvas {
 
 
 	handleResize () {
-		const {width, height} = this.canvas.getBoundingClientRect();
+
+
+		const width = Math.floor(this.canvas.getBoundingClientRect().width);
+		const height = Math.floor(this.canvas.getBoundingClientRect().height);
+
+		if (Math.floor(width) === this.canvas.width) {
+			return;
+		}
+
+
+		console.log('handle resize', width, this.canvas.width);
 
 		//if (width < this.canvas.width) {
 		this.scale = width / this.canvas.width;
@@ -611,8 +648,8 @@ class Canvas {
 					};
 
 					// text layer submitted as already rotated and flipped
-					const rotation = layer.type === 'Text' ?  0 : Math.floor(layer.rotation);
-					const flip = layer.type === 'Text' ?  0 : layer.flipped ? 1 : 0;
+					const rotation = layer.type === TEXT ?  0 : Math.floor(layer.rotation);
+					const flip = layer.type ===  TEXT ?  0 : layer.flipped ? 1 : 0;
 
 					const config = {
 						Left: Math.floor(layerLeftTopCorner.x),
@@ -693,7 +730,7 @@ class Canvas {
 
 		};
 
-		const requests = this.items.filter(item => item.type === 'Text' || item.type === DOODLE).map(item => uploadCustomImage(item, {
+		const requests = this.items.filter(item => item.type ===  TEXT || item.type === DOODLE).map(item => uploadCustomImage(item, {
 			width,
 			height
 		}, scale));
@@ -706,21 +743,21 @@ class Canvas {
 	//  text functionality
 	getFontStyle () {
 		const obj = this.getSelectedObject();
-		if (obj.type === 'Text') {
+		if (obj.type === TEXT) {
 			return obj.getFontStyle();
 		}
 	}
 
 	setFontStyle (fontStyle) {
 		const obj = this.getSelectedObject();
-		if (obj.type === 'Text') {
+		if (obj.type === TEXT) {
 			obj.setFontStyle(fontStyle);
 		}
 	}
 
 	setText (text) {
 		const obj = this.getSelectedObject();
-		if (obj.type === 'Text') {
+		if (obj.type === TEXT) {
 			obj.setText(text);
 		}
 	}
