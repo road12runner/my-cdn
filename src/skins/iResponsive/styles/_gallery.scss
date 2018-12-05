@@ -1,0 +1,59 @@
+.aam-designer-init {
+
+    .gallery {
+        position: relative;
+        height: 100%;
+
+        display: flex;
+        flex-direction: column;
+
+        &--selector {
+            margin: 10px 60px;
+        }
+
+        &--container {
+            flex: 1;
+            display: flex;
+            flex-flow: wrap;
+            overflow-y: auto;
+
+            align-content: flex-start;
+        }
+
+
+        .gallery-image {
+            width: 120px;
+            height: 100px;
+            margin: 10px;
+            cursor: pointer;
+            transition: all .2s;
+
+            &:hover {
+                transform: scale(1.1, 1.1);
+                border: 1px solid $dark-color;
+            }
+
+        }
+
+
+        .back-button {
+            width: 52px;
+            height: 52px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: $color-green;
+
+            border: none;
+            border-top-left-radius: 4px;
+            border-bottom-right-radius: 8px;
+
+            svg {
+                fill: $color-white;
+            }
+
+        }
+    }
+
+
+}

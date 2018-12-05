@@ -1,10 +1,13 @@
-
-class Dropdown {
+import {clearElement} from '../utils'
+export default class Dropdown {
 	constructor(el, items, opts ={}) {
 		this.el = el;
 		this.items = [];
 		this.placeHolder = '';
 
+
+
+		clearElement(this.el);
 
 		// create placeholder
 		this.placeHolder = document.createElement('span');
@@ -92,6 +95,5 @@ class Dropdown {
 }
 
 
-export default Dropdown;
 
 

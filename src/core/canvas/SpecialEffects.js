@@ -1,25 +1,19 @@
 
 
 
-export const SPECIAL_EFFECTS_INTENSITY = {
-	LOW: 1,
-	MEDIUM: 2,
-	HIGH: 3
-};
 
 
 export const AVAILABLE_EFFECTS = [
 	{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png', alpha: 'mask.jpg'}]},
-	//{id: 0, name: 'amaro', caption: 'Amaro', data: [ {lut: 'amaro_100.png'}, {lut: 'amaro_100-2.png'}]},
-	// {id: 1, name: 'inkwell', caption: 'Inkwell', data: [{lut: 'inkwell_100.png', baselineLut: 'inkwell_0.png'}]},
-	// {id: 2, name: 'clarendon', caption: 'Clarendon', data:[{lut: 'clarendon_100.png'}]},
-	// {id: 3, name: 'gingham', caption: 'Gingham', data: [{lut: 'gingham_100.png'}]},
-	// {id: 4, name: 'juno', caption: 'Juno', data: [{lut: 'juno_100.png'}]},
-	// {id: 5, name: 'lark', caption: 'Lark', data: [{lut: 'lark_100.png'}]},
-	// {id: 6, name: 'lofi', caption: 'Lofi', data: [{lut: 'lofi_100.png'}]},
-	// {id: 7, name: 'ludwig', caption: 'Ludwig', data: [{lut: 'ludwig_100.png'}]},
-	// {id: 8, name: 'valencia', caption: 'Valencia', data: [{lut: 'valencia_100.png'}]},
-	// {id: 9, name: 'xpro2', caption: 'Xpro2', data: [{lut: 'xpro2_100.png'}]}
+	{id: 1, name: 'inkwell', caption: 'Inkwell', data: [{lut: 'inkwell_100.png', baselineLut: 'inkwell_0.png'}]},
+	{id: 2, name: 'clarendon', caption: 'Clarendon', data:[{lut: 'clarendon_100.png'}]},
+	{id: 3, name: 'gingham', caption: 'Gingham', data: [{lut: 'gingham_100.png'}]},
+	{id: 4, name: 'juno', caption: 'Juno', data: [{lut: 'juno_100.png'}]},
+	{id: 5, name: 'lark', caption: 'Lark', data: [{lut: 'lark_100.png'}]},
+	{id: 6, name: 'lofi', caption: 'Lofi', data: [{lut: 'lofi_100.png'}]},
+	{id: 7, name: 'ludwig', caption: 'Ludwig', data: [{lut: 'ludwig_100.png'}]},
+	{id: 8, name: 'valencia', caption: 'Valencia', data: [{lut: 'valencia_100.png'}]},
+	{id: 9, name: 'xpro2', caption: 'Xpro2', data: [{lut: 'xpro2_100.png'}]}
 ];
 
 
@@ -154,8 +148,6 @@ class SpecialEffects {
 	async loadEffects (effects) {
 		this.effects = AVAILABLE_EFFECTS.filter(effect => effects.indexOf(effect.name) !== -1);
 
-		console.log('selected effects', this.effects);
-
 		for (const effect of this.effects) {
 
 			for (const effectData of effect.data) {
@@ -188,8 +180,6 @@ class SpecialEffects {
 		if (filter.alpha) {
 			filter.alphaImage = await loadAsset(filter.alpha);
 		}
-
-		console.log('loaded filter', filter);
 
 		return filter;
 
@@ -265,10 +255,6 @@ class SpecialEffects {
 
 				lutA = alpha ? aData[i] : 255; //Grayscale mask, all RBG values are the same.
 				iData[i + 3] = lutA;
-			}
-
-			if (alpha) {
-				console.log(JSON.stringify(testData) === JSON.stringify(baseImageData.data));
 			}
 
 			return baseImageData;

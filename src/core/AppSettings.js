@@ -26,6 +26,50 @@ export default {
 		}
 
 		return this.supportTouch;
+	},
+
+	isTextViewEnabled : function ()  {
+		if (this.designerSettings) {
+			return this.designerSettings.TextOnImage.Enabled && 'v' !== this.designerSettings.Orientation.Type;
+		}
+	},
+
+	isLogoViewEnabled:  function ()  {
+		if (this.designerSettings) {
+			return this.isClipArtEnabled() !== true && this.designerSettings.Coverage.Logo != null;
+		}
+	},
+
+	isClipArtEnabled: function ()  {
+		if (this.designerSettings) {
+			return  this.designerSettings.ClipArtEnabled === true;
+		}
+	},
+
+	isDataCaptureEnabled : function () {
+		console.log('this', this);
+		if (this.designerSettings) {
+			return this.designerSettings.DataCapture.EmailCapture === 'Enabled' || this.designerSettings.DataCapture.CustomDataCaptureEnabled === true;
+		}
+	},
+
+	isFacebookEnabled: function () {
+		if (this.designerSettings) {
+			return  this.designerSettings.FacebookAppId && this.designerSettings.EnableFacebookButton;
+
+		}
+	},
+
+	isSpecialEffectsEnabled: function () {
+		if (this.designerSettings) {
+			return this.designerSettings.SpecialEffects && this.designerSettings.SpecialEffects.Enabled === true && this.designerSettings.SpecialEffects.Effects.length > 0;
+
+		}
+	},
+	isDoodleEnabled: function ()  {
+		if (this.designerSettings) {
+			return this.designerSettings.Doodle && this.designerSettings.Doodle.Enabled === true;
+
+		}
 	}
-	
 };

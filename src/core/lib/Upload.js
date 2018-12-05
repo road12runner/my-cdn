@@ -185,6 +185,9 @@ class Upload {
 	complete (e) {
 		console.log('complete', e);
 		if (e.target.status === 200) {
+
+			// check for real time image rejection
+
 			// success
 			this.onComplete({
 				fileName: this._fileName,
@@ -193,6 +196,9 @@ class Upload {
 		} else {
 			this.error(e.target.responseText);
 		}
+
+
+
 	}
 
 

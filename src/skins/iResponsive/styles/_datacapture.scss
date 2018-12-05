@@ -1,0 +1,162 @@
+.aam-designer-init {
+
+    .data-capture {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+
+
+        &--container {
+            margin: 14px auto;
+            min-width: 200px;
+            width: 70%;
+
+            img {
+                width: 100%;
+            }
+
+        }
+
+        .back-button {
+            width: 52px;
+            height: 52px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background-color: $color-green;
+            border: none;
+            border-top-right-radius: 8px;
+            border-bottom-left-radius: 4px;
+
+            svg {
+                fill: $color-white;
+            }
+
+        }
+
+        .next-button {
+            width: 52px;
+            height: 52px;
+            border: none;
+            background-color: $color-green;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border-top-left-radius: 8px;
+            border-bottom-right-radius: 4px;
+            transition: background-color .3s;
+
+            &:disabled {
+                cursor: not-allowed;
+                background-color: $color-gray;
+            }
+        }
+
+
+
+        &--title {
+            font-size: 14px;
+            color: $color-white;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+
+        .error--container {
+            margin-top: 20px;
+            width: 50%;
+            align-self: center;
+            min-width: 260px;
+            color: $red-color;
+
+        }
+
+
+    }
+
+
+    .fields-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .data-capture-item {
+        width: 50%;
+        padding: 10px;
+        margin: 4px;
+        display: flex;
+        .data-capture-label {
+             width: 20%;
+            color: white;
+        }
+
+        .validation {
+            color: $red-color;
+        }
+
+
+        .invalid {
+            border: 1px solid $red-color;
+        }
+
+        input  {
+            border: 1px solid transparent;
+        }
+    }
+
+    &.small-desktop,
+    &.mobile {
+        .with-warning {
+            display: flex;
+            flex-direction: column;
+            width: 96%;
+            justify-content: space-between;
+            img {
+                width: 80%;
+            }
+
+            .preview-warning {
+                margin-top: 20px;
+                color: white;
+                width: 80%;
+
+                h3 {
+                    font-size: 14px;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                }
+
+                ul {
+                    font-size: 12px;
+                    margin-left: 12px;
+                }
+            }
+
+
+        }
+
+    }
+
+
+
+    &.mobile {
+        .back-button {
+            top: 0;
+            border-radius: 4px 0 8px 0;
+        }
+
+
+        .preview--container {
+            margin-top: 104px;
+        }
+
+        .preview--title {
+            margin-top: 80px;
+        }
+    }
+
+
+}

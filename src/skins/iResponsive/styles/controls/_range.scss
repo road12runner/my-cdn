@@ -1,0 +1,132 @@
+.range-control {
+    -webkit-appearance: none;
+    margin: 18px 0;
+    width: 100%;
+
+    &:focus {
+        outline: none;
+    }
+
+    &::-webkit-slider-thumb {
+        border: 1px solid $dark-color;
+        border-radius: 50%;
+        height: 22px;
+        width: 22px;
+        background: $color-white;
+        cursor: pointer;
+        -webkit-appearance: none;
+        margin-top: -8px;
+    }
+
+
+    &::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 5px;
+        cursor: pointer;
+        border-radius: 1px;
+        border: none;
+        vertical-align: middle;
+        background-color: $color-gray;
+    }
+
+    &::-moz-range-track {
+        width: 100%;
+        height: 5px;
+        cursor: pointer;
+        background: $color-gray;
+        border-radius: 1px;
+        border: none;
+    }
+
+    &::-moz-range-thumb {
+        border: 1px solid $dark-color;
+        height: 22px;
+        width: 22px;
+        border-radius: 50%;
+        background: $color-white;
+        cursor: pointer;
+    }
+
+    &::-ms-track {
+        width: 100%;
+        height: 5px;
+        cursor: pointer;
+        background: transparent;
+        border-color: transparent;
+        border-width: 16px 0;
+        color: transparent;
+    }
+
+    &::-ms-thumb {
+        border: 1px solid;
+        height: 22px;
+        width: 22px;
+        border-radius: 50%;
+        background: #ffffff;
+        cursor: pointer;
+    }
+
+    &::-ms-fill-lower,&::-ms-fill-upper {
+        background: $color-gray;
+        border: none;
+        border-radius: 1px;
+    }
+}
+
+
+.plus {
+    display: inline-block;
+    width: 100%;
+    height: 100% ;
+    position: relative;
+    transform: rotate(0deg);
+    background-color: transparent;
+}
+
+.plus::before {
+    overflow: hidden;
+    content: '';
+    display: inline-block;
+    width: 100%;
+    height: 2px;
+    background-color: $dark-color;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+}
+
+.plus::after {
+    content: '';
+    display: inline-block;
+    background-color: $dark-color;
+    width: 2px;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+
+
+
+.minus {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+    &:after {
+        display: inline-block;
+        position: absolute;
+        content: '';
+        width: 100%;
+        height: 100%;
+        border-bottom: 2px solid $dark-color;
+        bottom: 50%;
+        left: 0;
+    }
+}
+

@@ -1,4 +1,6 @@
 <div class="designer">
+    <input id="logo-file" type="file">
+    <div id="error-message" class="error-message"></div>
 
 
     <div class="side--container">
@@ -25,12 +27,52 @@
                     <div id="gallery-selector" class="toolbox--image-selection--gallery--selector aam-dropdown"></div>
                     <div class="toolbox--image-selection--gallery--container"></div>
 
+                    <div class="controls--container">
+                        <div class="range--container">
+
+                            <button id="btn-scale-decrease" class="range--container--button" title="" aria-label="" data-ref="decrease">
+                                <i class="minus"></i>
+                            </button>
+                            <input type="range" id="scale-control" min="10" max="200" name="scale-range" class="range-control">
+                            <button id="btn-scale-increase" class="range--container--button" title="" aria-label="" data-ref="increase">
+                                <i class="plus"></i>
+                            </button>
+
+                        </div>
+                        <div class="buttons--container">
+                            <button id="btn-rotate-left" class="control-button">
+                                <svg><path d="M18.885 3.515c-4.617-4.618-12.056-4.676-16.756-.195l-2.129-2.258v7.938h7.484l-2.066-2.191c2.82-2.706 7.297-2.676 10.073.1 4.341 4.341 1.737 12.291-5.491 12.291v4.8c3.708 0 6.614-1.244 8.885-3.515 4.686-4.686 4.686-12.284 0-16.97z"/></svg>
+                            </button>
+                            <button id="btn-rotate-right" class="control-button">
+                                <svg><path d="M5.115 3.515c4.617-4.618 12.056-4.676 16.756-.195l2.129-2.258v7.938h-7.484l2.066-2.191c-2.82-2.706-7.297-2.676-10.073.1-4.341 4.341-1.737 12.291 5.491 12.291v4.8c-3.708 0-6.614-1.244-8.885-3.515-4.686-4.686-4.686-12.284 0-16.97z"/></svg>
+                            </button>
+                            <button id="btn-flip" class="control-button">
+                                <svg viewBox="0 0 61.999905 52" xmlns="http://www.w3.org/2000/svg">
+                                    <g transform="translate(-1 -6)" stroke="#000" stroke-linejoin="round" stroke-width="2">
+                                        <path d="m2 57h25v-50h-5z"  fill-rule="evenodd"/>
+                                        <path d="m37 57v-50h5l20 50z" fill="none"/>
+                                    </g>
+                                </svg>
+
+                            </button>
+                            <button id="btn-reset" class="control-button">
+                                <svg><path d="M0 3v18h24v-18h-24zm6.666 16h-4.666v-4.666l1.508 1.507 1.843-1.841 1.649 1.649-1.842 1.842 1.508 1.509zm-1.315-9l-1.843-1.842-1.508 1.508v-4.666h4.666l-1.508 1.508 1.842 1.843-1.649 1.649zm16.649 9h-4.666l1.507-1.508-1.841-1.843 1.649-1.649 1.842 1.842 1.509-1.508v4.666zm0-9.334l-1.508-1.507-1.843 1.841-1.649-1.649 1.842-1.842-1.508-1.509h4.666v4.666z"/></svg>
+                            </button>
+
+                        </div>
+                    </div>
+
                 </div>
                 <div class="toolbox--image-selection--upload">
                     <button id="btn-card-image-upload" class="toolbox--image-selection--upload--button">
                         <input type="file" id="file-upload">
                         <span data-ref="upload"></span>
                     </button>
+
+                    <div class="upload-guidelines">
+                        <h1 data-ref="uploadTitle"></h1>
+                        <span data-ref="uploadHint"></span>
+                    </div>
 
                     <div class="toolbox--image-selection--upload--info"></div>
                 </div>
@@ -45,59 +87,96 @@
     </div>
 
 
-    <div class="canvas--container">
-        <canvas id="ssg-canvas"></canvas>
+    <div class="small-side--container">
+        <button id="small-btn-gallery" class="small-btn">
+            <svg><path d="M10 15c0-.552.448-1 1.001-1s.999.448.999 1-.446 1-.999 1-1.001-.448-1.001-1zm6.2 0l-1.7 2.6-1.3-1.6-3.2 4h10l-3.8-5zm7.8-5v14h-18v-14h18zm-2 2h-14v10h14v-10zm-6.462-9.385l2.244 5.385h2.167l-3.334-8-16.615 6.923 4 9.663v-5.265l-1.384-3.321 12.922-5.385z"/></svg>
+        </button>
+
+        <button id="small-btn-upload" class="small-btn">
+            <svg><path d="M18 10v13h-18v-13h18zm-13 2h-3v2h3v-2zm11 5c0-2.209-1.791-4-4-4s-4 1.791-4 4 1.791 4 4 4 4-1.791 4-4zm-4-2c-1.104 0-2 .897-2 2s.896 2 2 2 2-.897 2-2-.896-2-2-2zm-5.314-7l1.615-4.437 13.154 4.789-1.455 4v5.848l4-11.042-16.895-6.158-2.548 7h2.129z"/></svg>
+        </button>
+
+        <button id="small-btn-flip" class="small-btn">
+            <svg viewBox="0 0 61.999905 52" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(-1 -6)" stroke="#000" stroke-linejoin="round" stroke-width="2">
+                    <path d="m2 57h25v-50h-5z"  fill-rule="evenodd"/>
+                    <path d="m37 57v-50h5l20 50z" fill="none"/>
+                </g>
+            </svg>
+        </button>
+
+        <button id="small-btn-reset" class="small-btn">
+            <svg><path d="M0 3v18h24v-18h-24zm6.666 16h-4.666v-4.666l1.508 1.507 1.843-1.841 1.649 1.649-1.842 1.842 1.508 1.509zm-1.315-9l-1.843-1.842-1.508 1.508v-4.666h4.666l-1.508 1.508 1.842 1.843-1.649 1.649zm16.649 9h-4.666l1.507-1.508-1.841-1.843 1.649-1.649 1.842 1.842 1.509-1.508v4.666zm0-9.334l-1.508-1.507-1.843 1.841-1.649-1.649 1.842-1.842-1.508-1.509h4.666v4.666z"/></svg>
+        </button>
+
     </div>
 
+
+    <div class="canvas--container">
+        <canvas id="ssg-canvas"></canvas>
+
+    </div>
+
+
+    <button id="btn-next" class="next-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <path fill="white" d="M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 29c-7.18 0-13-5.82-13-13s5.82-13 13-13 13 5.82 13 13-5.82 13-13 13z"></path>
+            <path fill="white" d="M11.086 22.086l2.829 2.829 8.914-8.914-8.914-8.914-2.828 2.828 6.086 6.086z"></path>
+        </svg>
+    </button>
+
+
+    <button id="btn-tools" class="tools-button">
+        <svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-10 12c0-5.514 4.486-10 10-10s10 4.486 10 10c0 1.679-.421 3.26-1.155 4.651l-1.377-1.377c-.662-.661-1.002-1.581-.93-2.514.137-1.767-.471-3.58-1.82-4.93-1.226-1.224-2.825-1.83-4.428-1.83-.603 0-1.206.086-1.79.257l3.77 3.771c.41 1.889-2.33 4.66-4.242 4.242l-3.77-3.77c-.172.584-.259 1.188-.259 1.792 0 1.602.606 3.202 1.829 4.426 1.352 1.351 3.164 1.958 4.932 1.821.932-.072 1.852.269 2.514.931l1.377 1.376c-1.391.734-2.972 1.154-4.651 1.154-5.514 0-10-4.486-10-10z"/></svg>
+    </button>
+
+
+
+    <div class="features-buttons-container">
+        <button id="facebook" class="feature-button">
+            <svg version="1.1"  xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px"viewBox="206 -206 512 512" style="enable-background:new 206 -206 512 512;" xml:space="preserve">
+                <path id="facebook-circle-icon" d="M462.4-156c-113.8,0-206,92.2-206,206s92.2,206,206,206s206-92.2,206-206S576.2-156,462.4-156z
+                     M523.4-34.8c0,0-20.6,0-28.8,0c-10.2,0-12.3,4.2-12.3,14.7c0,8.8,0,25.4,0,25.4h41.1l-4,44.6h-37.1v133.2h-53.2V50.4h-27.7V5.3
+                    h27.7c0,0,0-6.5,0-35.6c0-33.4,17.8-50.8,57.4-50.8c6.5,0,36.8,0,36.8,0L523.4-34.8L523.4-34.8z" fill="#3f5a9e"/>
+            </svg>
+        </button>
+        <button id="btn-filters" class="feature-button">
+            <?xml version="1.0" encoding="UTF-8"?>
+            <svg width="122.22" height="105.55" version="1.1" viewBox="0 0 32.336928 27.926994" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(-162.99 -206.69)">
+                    <g transform="translate(157.08 113.57)" fill-opacity=".70588" stroke="#000" stroke-width=".26458">
+                        <circle cx="16.33" cy="110.62" r="10.29" fill="#00f" style="paint-order:fill markers stroke"/>
+                        <circle cx="22.077" cy="103.54" r="10.29" fill="#f00" style="paint-order:fill markers stroke"/>
+                        <circle cx="27.823" cy="110.62" r="10.29" fill="#0f0" style="paint-order:fill markers stroke"/>
+                    </g>
+                </g>
+            </svg>
+        </button>
+        <button id="btn-emoji" class="feature-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.508 13.941c-1.513 1.195-3.174 1.931-5.507 1.931-2.335 0-3.996-.736-5.509-1.931l-.492.493c1.127 1.72 3.2 3.566 6.001 3.566 2.8 0 4.872-1.846 5.999-3.566l-.492-.493zm.492-3.939l-.755.506s-.503-.948-1.746-.948c-1.207 0-1.745.948-1.745.948l-.754-.506c.281-.748 1.205-2.002 2.499-2.002 1.295 0 2.218 1.254 2.501 2.002zm-7 0l-.755.506s-.503-.948-1.746-.948c-1.207 0-1.745.948-1.745.948l-.754-.506c.281-.748 1.205-2.002 2.499-2.002 1.295 0 2.218 1.254 2.501 2.002z"/></svg>
+        </button>
+        <button id="btn-text" class="feature-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M22 0h-20v6h1.999c0-1.174.397-3 2.001-3h4v16.874c0 1.174-.825 2.126-2 2.126h-1v2h9.999v-2h-.999c-1.174 0-2-.952-2-2.126v-16.874h4c1.649 0 2.02 1.826 2.02 3h1.98v-6z"/></svg>
+        </button>
+        <button id="btn-logo" class="feature-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 3v18h24v-18h-24zm13 14h-10v-.417c-.004-1.112.044-1.747 1.324-2.043 1.403-.324 2.787-.613 2.122-1.841-1.973-3.637-.563-5.699 1.554-5.699 2.077 0 3.521 1.985 1.556 5.699-.647 1.22.688 1.51 2.121 1.841 1.284.297 1.328.936 1.323 2.057v.403zm8 0h-6v-2h6v2zm0-4h-6v-2h6v2zm0-4h-6v-2h6v2z"/></svg>
+        </button>
+        <button id="btn-doodle" class="feature-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M19.769 9.923l-12.642 12.639-7.127 1.438 1.438-7.128 12.641-12.64 5.69 5.691zm1.414-1.414l2.817-2.82-5.691-5.689-2.816 2.817 5.69 5.692z"/></svg>
+        </button>
+
+
+    </div>
+
+
+    <div class="features-items-container">
+
+    </div>
+
+
 </div>
 
 
 
-<div class="cliparts"></div>
-<div class="effects"></div>
-<div class="toolbox">
-    <button id="btn-up">&uarr;</button>
-    <button id="btn-down">&darr;</button>
-    <button id="btn-left">&larr;</button>
-    <button id="btn-right">&rarr;</button>
-    <button id="btn-rotate-left">&#8634;</button>
-    <button id="btn-rotate-right">&#8635;</button>
-    <button id="btn-flip">&harr;</button>
 
-    <button id="btn-preview">Preview</button>
-    <button id="btn-submit">Submit</button>
-
-    <button id="btn-reset">Reset</button>
-
-    <br>
-    <input type="text" placeholder="Some text" id="text-field" value="1TJFgdp0xA">
-    <button id="btn-text">Add Text</button>
-    <button id="btn-text-bold">Bold</button>
-    <button id="btn-text-italic">Italic</button>
-    <button id="btn-text-shadow">Shadow</button>
-    <button id="btn-text-stroke">Stroke</button>
-    <input class="color" id="text-color">
-    <br>
-    <button id="btn-add-doodle">Add Doodle</button>
-    <button id="btn-doodle-undo">Undo</button>
-    <button id="btn-doodle-clear">Clear</button>
-    <input type="number" id="doodle-line-width" value="10"> Width
-    <input class="color" id="doodle-color">
-
-
-
-    <button id="btn-filters">Filters</button>
-    <button id="btn-filters-intensity-low">Low</button>
-    <button id="btn-filters-intensity-medium">Medium</button>
-    <button id="btn-filters-intensity-high">High</button>
-    <br>
-    <input id="logo-file" type="file">
-    <button id="btn-add-logo">Add Logo</button>
-
-</div>
-<div id="error-message"></div>
-
-
-
-<div class="preview-container"></div>
 

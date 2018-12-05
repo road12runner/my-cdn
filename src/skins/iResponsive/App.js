@@ -5,6 +5,10 @@ import designerTemplate from './templates/designer.tmpl';
 import MainContainer  from './MainContainer';
 import GalleryManager from '../../core/gallery/GaleryManager';
 import AppSettings from '../../core/AppSettings';
+import GlobalSettings from '../../core/GlobalSettings';
+
+
+const  DESKTOP_WIDTH_BREAKPOINT = 600;
 
 
 class App {
@@ -19,14 +23,17 @@ class App {
 		//this.parseSettings(settings);
 		
 		//$(this.rootElement).html('designer placeholder');
-	}
 
+
+
+	}
 
 
 	start() {
 		console.log('start App');
+		this.handleResize();
 		this.rootElement.innerHTML = 'Loading...';
-		window.addEventListener('resize', () => this.handleResize());
+		window.addEventListener('resize', (e) => this.handleResize(e));
 
 		const {width, height} = this.rootElement.getBoundingClientRect();
 
@@ -50,7 +57,7 @@ class App {
 			}
 
 			if (that.options.languageId) {
-				AppSettings.designerSettings.Language = this.options.languageId;
+				AppSettings.designerSettings.Language = that.options.languageId;
 			}
 
 
@@ -65,7 +72,9 @@ class App {
 
 
 		async function loadGalleries() {
-			console.log('load galleries');
+			if (!AppSettings.designerSettings.Galleries.URL) {
+				return;
+			}
 			const galleryManager = new GalleryManager();
 			return await galleryManager.loadGalleries(AppSettings.designerSettings.Galleries.URL);
 		}
@@ -81,8 +90,11 @@ class App {
 
 		//load language data
 		async function loadLanguage() {
-			const res = await api.getLanguage(AppSettings.handoverKey, AppSettings.designerSettings.Language);
-			console.log('language', res);
+			const langId = new GlobalSettings().langIdByURL();
+			let activeLanguage;
+			(langId) ? activeLanguage = langId : activeLanguage = AppSettings.designerSettings.Language;
+
+			const res = await api.getLanguage(AppSettings.handoverKey, activeLanguage);
 			AppSettings.Language = res || {};
 			AppSettings.Language.LanguageId = AppSettings.designerSettings.Language;
 			return res;
@@ -95,9 +107,6 @@ class App {
 			if (AppSettings.isTouchDevice()) {
 				this.rootElement.classList.add('mobile');
 			}
-
-			console.log('show maincontainer');
-
 
 			const mainContainer = new MainContainer(this.rootElement);
 			mainContainer.show();
@@ -119,8 +128,20 @@ class App {
 
 
 	handleResize() {
-		// const {width, height} = this.rootElement.getBoundingClientRect();
-		// console.log('Resize', width, height);
+
+		if (AppSettings.isTouchDevice() === true) {
+			return;
+		}
+
+		const {width, height} = this.rootElement.getBoundingClientRect();
+		console.log('Resize', width, height);
+		if (width <= DESKTOP_WIDTH_BREAKPOINT) {
+			this.rootElement.classList.add('small-desktop');
+			this.rootElement.classList.remove('desktop');
+		} else {
+			this.rootElement.classList.remove('small-desktop');
+			this.rootElement.classList.add('desktop');
+		}
 
 	}
 	

@@ -7,6 +7,13 @@ const hostname = 'https://devserver.serversidegraphics.com/pcs/api/v1';
 import {LAYER_CATEGORY_ID} from '../constants';
 
 
+export const CustomImageType = {
+	Image : "Image",
+	Facebook : "Facebook"
+};
+
+
+
 function createQuery(arr) {
 	const qs = [];
 	for(var key in arr) {
@@ -16,7 +23,7 @@ function createQuery(arr) {
 }
 
 
-async function performGetRequest(url) {
+export async function performGetRequest(url) {
 
 	let  result;
 	try {
@@ -203,6 +210,14 @@ export function getRedirect(url) {
 export function getImageUploadUrl(handoverKey, clientId, layerId) {
 	const layer = layerId ? LAYER_CATEGORY_ID[layerId] : LAYER_CATEGORY_ID.Card;
 	return [hostname, 'designers', handoverKey, 'ClientDesigns', clientId, `Uploads?layerid=${layer}`].join('/');
+}
+
+
+export function uploadImageByUrl(hanoverKey, clientId, url, imageType) {
+
+	const postUrl = [hostname, 'designers', hanoverKey, 'ClientDesigns', clientId, 'Uploads'].join('/');
+	return performPostRequest(postUrl, {Url : url, Type : imageType});
+
 }
 
 

@@ -1,6 +1,8 @@
 import App from './App';
 
 import './styles/main.scss';
+import AppSettings from '../../core/AppSettings';
+import GlobalSettings from '../../core/GlobalSettings';
 
 export function designer (settings = {}) {
 
@@ -8,6 +10,12 @@ export function designer (settings = {}) {
 	const me = document.querySelector('script[data-name="aam-designer"]');
 	let bootstrap = false;
 	this.handoverKey =  settings.handoverKey;
+
+	
+	const globalSetting = new GlobalSettings();
+	// handoverkey handling 
+	globalSetting.handoverKeyByURL();
+	
 	if (me) {
 
 		//extract handover key attribute in script tag if not define in settings
@@ -38,6 +46,7 @@ export function designer (settings = {}) {
 			handlerError('Please provide handoverkey');
 		}
 	}
+
 
 	const app = new App(this);
 

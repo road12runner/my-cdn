@@ -1,3 +1,5 @@
+import AppSettings from '../AppSettings';
+
 const CLIPART_IMAGE_TYPE = 'Clip Art';
 const STANDARD_IMAGE_TYPE = 'Standard';
 
@@ -33,6 +35,7 @@ class  GalleryManager {
 
 				this.galleries = data;
 
+
 				for(const gallery of this.galleries) {
 
 					if (gallery.ImageType === CLIPART_IMAGE_TYPE) {
@@ -54,6 +57,7 @@ class  GalleryManager {
 									this.selectedGalleryId = standartGalleries[0].Id;
 								}
 							}
+							console.log('galleries', this.galleries);
 
 							resolve();
 						}
@@ -81,10 +85,19 @@ class  GalleryManager {
 	};
 
 	getSelectedGallery() {
+		let images = [];
 		if (this.selectedGalleryId) {
-			return this.galleries.find( el => el.Id === this.selectedGalleryId).images;
+
+			// find selected gallery
+			const selectedGallery = this.galleries.find( el => el.Id === this.selectedGalleryId);
+			if (selectedGallery) {
+				images  = selectedGallery.images;
+				if (selectedGallery.Locked) {
+					images.forEach( img => img.Locked = true);
+				}
+			}
 		}
-		return [];
+		return images;
 	}
 
 
@@ -103,99 +116,20 @@ class  GalleryManager {
 	}
 
 
-	// let imageCategories = [];
-	// let selectedCategoryId = null;
-	//
-	// function init (cb) {
-	//
-	// 	_loadImageCategories(function () {
-	// 			if (cb) {
-	// 				cb();
-	// 			}
-	// 		}
-	// 	);
-	// }
-	//
-	// function _loadImageCategories (cb) {
-	//
-	// 	if (viewData.get('mode') === App.Modes.UploadOnly) {
-	// 		return cb(imageCategories);
-	// 	}
-	//
-	// 	if (imageCategories.length > 0) {
-	// 		return cb(imageCategories);
-	// 	}
-	//
-	// 	App.Designer.GetCategories(function (cats) {
-	//
-	// 		imageCategories = cats;
-	//
-	//
-	// 		// check if clipart category exists
-	// 		if (cats) {
-	// 			let count = 0;
-	// 			cats.forEach(function (category) {
-	// 				category.GetCategory(function (data) {
-	// 					count++;
-	// 					category.images = data.Images;
-	//
-	// 					if (category.ImageType === CLIPART_IMAGE_TYPE) {
-	// 						App.Designer.ClipArtEnabled = true;
-	// 					}
-	//
-	// 					if (count === cats.length) {
-	//
-	// 						// find first standard gallery
-	// 						if (!selectedCategoryId) {
-	// 							let standardGalleries = _.filter(cats, {ImageType: STANDARD_IMAGE_TYPE, Knockout: false});
-	// 							if (standardGalleries.length > 0) {
-	// 								that.setSelectedCategory(standardGalleries[0].Id);
-	// 							}
-	// 						}
-	//
-	// 						cb(cats);
-	// 					}
-	// 				});
-	// 			});
-	// 		}
-	// 	});
-	// }
-	//
-	//
-	// this.setSelectedCategory = function(id) {
-	// 	selectedCategoryId = id;
-	// };
-	//
-	// this.getSelectedCategory = function() {
-	// 	return _.find(imageCategories, {Id: selectedCategoryId});
-	// };
-	//
-	// this.getAllStandardCategories = function() {
-	// 	return _.chain(imageCategories).filter({ImageType: STANDARD_IMAGE_TYPE, Knockout: false}).sortBy(function(c){
-	// 		return c.Order;
-	// 	}).value();
-	// };
-	//
-	// this.getClipArtCategories = function() {
-	// 	return _.chain(imageCategories).filter({ImageType: CLIPART_IMAGE_TYPE, Knockout: false}).sortBy(function(c){
-	// 		return c.Order;
-	// 	}).value();
-	// };
-	//
-	// this.addCustomImage = function(id, name, url) {
-	// 	var customCategory = _.find(imageCategories, {Id: -1});
-	// 	if (!customCategory) {
-	// 		customCategory = { Id: -1, Locked : false, Name: viewData.get('languageData').myImages, ImageType: STANDARD_IMAGE_TYPE, Knockout: false, Order: 100, images: []};
-	// 		imageCategories.push(customCategory);
-	// 	}
-	// 	customCategory.images.push({Id: id, Name: name, LargeImage: url, Locked: false});
-	// 	that.setSelectedCategory(-1);
-	// };
-	//
-	//
-	// init(cb);
-	//
-	// return this;
+	addCustomImage( imageId, imageUrl) {
+
+		// check if custom gallery exists
+		let customGallery = this.galleries.find( gallery => gallery.id === 0);
+		if (!customGallery) {
+			customGallery = {Id: 1, Locked: false, Name: AppSettings.Language.myImages, images:[], ImageType :STANDARD_IMAGE_TYPE};
+			this.galleries.unshift(customGallery);
+		}
+
+		customGallery.images.push( {Id: imageId, LargeImage: imageUrl, Locked: false} );
+		this.selectedGalleryId = 0;
+
+	}
+
 }
 
 

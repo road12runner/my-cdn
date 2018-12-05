@@ -34,7 +34,7 @@ class Canvas {
 
 	constructor (canvasElement, options = {}) {
 
-		console.log('AppSettings', AppSettings);
+		const onLoaded = options.onLoaded || (() => {});
 
 		this.canvas = canvasElement ? document.querySelector(canvasElement) : document.createElement('canvas');
 		if (!this.canvas.id) {
@@ -134,6 +134,7 @@ class Canvas {
 		img.src = AppSettings.designerSettings.DesignTemplate.UrlLarge;
 		img.onload = () => {
 			this.template.image = img;
+			onLoaded();
 		};
 
 	}
@@ -260,7 +261,6 @@ class Canvas {
 
 	startEvent (e) {
 		const pos = getEventPosition(e);
-		console.log(pos);
 		this.findSelectedObject(pos).click(pos);
 
 	}
@@ -335,6 +335,10 @@ class Canvas {
 		return this.card.selected ? this.card : this.items.find(item => item.selected === true);
 	}
 
+	hasDoodle() {
+		return this.items.filter( item => item.type === DOODLE).length !== 0;
+	}
+
 	keepEvent (e) {
 		const pos = getEventPosition(e);
 
@@ -360,7 +364,10 @@ class Canvas {
 
 	finishEvent (e) {
 		const selectedObj = this.getSelectedObject();
-		selectedObj.done();
+		if (selectedObj) {
+			selectedObj.done();
+		}
+
 
 		this.removeItems();
 	}
@@ -382,6 +389,11 @@ class Canvas {
 
 
 
+	//reset card image
+	reset() {
+		this.card.reset();
+		this.testCoverage();
+	}
 
 	dragOver (e) {
 		e.preventDefault();
@@ -396,7 +408,6 @@ class Canvas {
 		const imageUrl = data.url;
 		if (imageId) {
 			const pos = getEventPosition(e);
-			console.log('image id', imageId, imageUrl, getEventPosition(e));
 			const cardItem = this.addImageItem(imageId, imageUrl, {initialPosition: pos});
 			cardItem.originPoint = getEventPosition(e);
 		}
@@ -437,7 +448,7 @@ class Canvas {
 			width: 50 * canvasScale,
 			height: 50 * canvasScale,
 			type: options.type,
-			layerType : options.type === LOGO ? CUSTOM_IMAGE : ST
+			layerType : options.type === LOGO ? CUSTOM_IMAGE : STOCK_IMAGE
 		});
 
 		if (options.type) {
@@ -528,26 +539,37 @@ class Canvas {
 
 	moveUp (val) {
 		this.getSelectedObject().moveUp(val);
+		this.testCoverage();
 	}
 
 	moveDown (val) {
 		this.getSelectedObject().moveDown(val);
+		this.testCoverage();
 	}
 
 	moveLeft (val) {
 		this.getSelectedObject().moveLeft(val);
+		this.testCoverage();
 	}
 
 	moveRight (val) {
 		this.getSelectedObject().moveRight(val);
+		this.testCoverage();
 	}
 
 	rotate (val) {
 		this.getSelectedObject().rotate(val);
+		this.testCoverage();
 	}
 
 	flip () {
 		this.getSelectedObject().flip();
+		this.testCoverage();
+	}
+
+	scale(val) {
+		this.getSelectedObject().scale(val);
+		this.testCoverage();
 	}
 
 
@@ -562,7 +584,6 @@ class Canvas {
 		}
 
 
-		console.log('handle resize', width, this.canvas.width);
 
 		//if (width < this.canvas.width) {
 		this.scale = width / this.canvas.width;
@@ -613,7 +634,6 @@ class Canvas {
 		const cardLayers = [];
 
 		const canvasScale = this.getScale();
-		console.log('canvasScale', canvasScale);
 
 		const canvasCenter = {
 			x: this.canvas.width / 2,
@@ -696,6 +716,9 @@ class Canvas {
 
 			const data = AppSettings.client;
 			data.Layers = layers;
+			// if( AppSettings.DataCapture) {
+			// 	data.CustomDataCapture = AppSettings.DataCapture;
+			// }
 
 			api.submitCard(AppSettings.handoverKey, AppSettings.clientId, data).then(res => {
 				console.log('submit response', res);
@@ -708,7 +731,6 @@ class Canvas {
 
 		const width = AppSettings.designerSettings.Printer.Size.Width;
 		const height = AppSettings.designerSettings.Printer.Size.Height;
-		console.log(width, height);
 
 		const scale = {
 			width: width / this.template.width,
@@ -734,7 +756,6 @@ class Canvas {
 			width,
 			height
 		}, scale));
-		console.log('requests', requests);
 
 		return Promise.all(requests);
 

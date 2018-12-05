@@ -140,6 +140,10 @@ class CanvasObject {
 
 	click(pos) {
 
+		if (this.locked) {
+			return;
+		}
+
 		const cardArea = {
 			x: this.originPoint.x - this.width /2,
 			y: this.originPoint.y - this.height /2,
@@ -244,6 +248,11 @@ class CanvasObject {
 
 
 	scale (val) {
+
+		if (this.locked) {
+			return;
+		}
+
 		const ratio = this.width / this.height;
 		this.width *= val;
 		this.height = this.width / ratio;
@@ -253,6 +262,11 @@ class CanvasObject {
 	}
 
 	move(pos) {
+
+		if (this.locked) {
+			return;
+		}
+
 		this.originPoint.x += pos.x;
 		this.originPoint.y += pos.y;
 
@@ -261,42 +275,76 @@ class CanvasObject {
 
 
 	moveUp(val) {
+
+		if (this.locked) {
+			return;
+		}
+
 		this.originPoint.y -= val;
 		this.testCoverage();
 	}
 
 
 	moveDown(val) {
+
+		if (this.locked) {
+			return;
+		}
+
 		this.originPoint.y += val;
 		this.testCoverage();
 	}
 
 	moveLeft(val) {
+		if (this.locked) {
+			return;
+		}
+
 		this.originPoint.x -= val;
 		this.testCoverage();
 	}
 
 	moveRight(val) {
+		if (this.locked) {
+			return;
+		}
+
 		this.originPoint.x += val;
 		this.testCoverage();
 	}
 
 
 	rotate(val) {
+		if (this.locked) {
+			return;
+		}
+
 		this.rotation += val;
 		this.testCoverage();
 	}
 
 
 	flip() {
+		if (this.locked) {
+			return;
+		}
+
 		this.flipped = !this.flipped;
 	}
 
 	startMove() {
+		if (this.locked) {
+			return;
+		}
+
 		this.savedOrigPoing = Object.assign({}, this.originPoint);
 	}
 
 	doMove(pos) {
+		if (this.locked) {
+			return;
+		}
+
 		if (this.savedOrigPoing) {
 			this.originPoint = {
 				x: this.savedOrigPoing.x + pos.x,
@@ -308,15 +356,27 @@ class CanvasObject {
 	}
 
 	endMove() {
+		if (this.locked) {
+			return;
+		}
+
 		this.done();
 	}
 
 
 	startRotate(angle) {
+		if (this.locked) {
+			return;
+		}
+
 		this.savedRotation = angle;
 	}
 
 	doRotate(angle) {
+		if (this.locked) {
+			return;
+		}
+
 		if (this.savedRotation !== null ) {
 			this.rotation -= (this.savedRotation - angle);
 			this.savedRotation = angle;
@@ -326,9 +386,17 @@ class CanvasObject {
 	}
 
 	endRotate() {
+		if (this.locked) {
+			return;
+		}
+
 		this.done();
 	}
 	startZoom() {
+		if (this.locked) {
+			return;
+		}
+
 		this.savedSize = {
 			width: this.width,
 			height: this.height
@@ -336,6 +404,10 @@ class CanvasObject {
 	}
 
 	doZoom(scale) {
+		if (this.locked) {
+			return;
+		}
+
 		if (this.savedSize) {
 			this.width = this.savedSize.width * scale;
 			this.height = this.savedSize.height * scale;
@@ -345,6 +417,10 @@ class CanvasObject {
 	}
 
 	endZoom() {
+		if (this.locked) {
+			return;
+		}
+
 		this.done();
 	}
 

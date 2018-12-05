@@ -10,3 +10,10 @@ export const LAYER_TYPE = {
 	TEXT: 'text',
 	LOGO: 'logo'
 };
+
+
+export const SPECIAL_EFFECTS_INTENSITY = {
+	LOW: 1,
+	MEDIUM: 2,
+	HIGH: 3
+};

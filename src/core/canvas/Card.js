@@ -48,6 +48,7 @@ class Card extends CanvasObject {
 		};
 		this.width = this.coverageArea.width + 40;
 		this.height = this.coverageArea.height + 40;
+		this.testCoverage();
 
 	}
 
@@ -77,7 +78,7 @@ class Card extends CanvasObject {
 		this.id = id;
 		this.layerType = imageType;
 
-
+		this.specialEffectImage = null;
 
 
 		const img = new Image();
@@ -211,7 +212,7 @@ class Card extends CanvasObject {
 	}
 	
 	testCoverage() {
-		
+
 		const bleedBox = {
 			top: -this.coverageArea.height / 2,
 			left: -this.coverageArea.width / 2,
