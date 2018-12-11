@@ -301,7 +301,11 @@ class Designer {
 
 
 	hideAllFeatures() {
-		this.featuresContainer.querySelectorAll('.feature').forEach( item => item.classList.add('hidden'));
+		console.log('feature', this.featuresContainer.querySelectorAll('.feature'));
+		const features = this.featuresContainer.querySelectorAll('.feature');
+		for (const feature of features) {
+			feature.classList.add('hidden');
+		}
 	}
 
 
@@ -486,18 +490,18 @@ class Designer {
 				autoUpload: true,
 				callbacks: {
 					onComplete,
-					onProgress
+					onProgress,
+					onSubmit: () => this.loader.show()
 				}
 			});
-
-		this.loader.show();
 		input.click();
+
+
 
 	}
 
 
 	renderCardUploader() {
-		//todo add custom  image gallery  when new user image is uploaded
 		const uploadInfo = this.el.querySelector('.toolbox--image-selection--upload--info');
 
 
@@ -510,7 +514,7 @@ class Designer {
 			this.showGalleries();
 			this.handleLockedImage(false);
 			AppSettings.isCustomImage = true;
-			uploadInfo.innerHTML = 'Identifying...';
+			uploadInfo.innerHTML = '';
 
 			this.filtersRendered = false;
 			this.loader.hide();
@@ -531,13 +535,13 @@ class Designer {
 				autoUpload: true,
 				callbacks: {
 					onComplete,
-					onProgress
+					onProgress,
+					onSubmit: () => this.loader.show()
 				}
 			});
 
 
 		this.el.querySelector('#btn-card-image-upload').onclick = () => {
-			this.loader.show();
 			uploadInfo.innerHTML = 'Uploading...';
 			input.click();
 		};
@@ -829,3 +833,4 @@ export default Designer;
 // todo realtime image check
 // todo  apitracker
 // todo add environment configuration
+// todo check for compatibility with IE11

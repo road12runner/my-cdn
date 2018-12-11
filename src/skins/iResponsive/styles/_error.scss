@@ -1,0 +1,17 @@
+.error-view {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: $red-color;
+    background-color: $dark-color;
+
+    .error--title {
+        font-weight: bold;
+        margin: 10px 0;
+
+    }
+}
+

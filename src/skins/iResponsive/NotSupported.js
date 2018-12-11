@@ -2,7 +2,7 @@ import template from './templates/not-supported.tmpl';
 import localize from   '../../core/localize';
 import AppSettings from '../../core/AppSettings';
 
-export default class Preview {
+export default class NotSupported {
 	constructor (parentElement) {
 
 		this.parentElement = parentElement;

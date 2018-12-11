@@ -1,20 +1,31 @@
 import App from './App';
 
 import './styles/main.scss';
-import AppSettings from '../../core/AppSettings';
-import GlobalSettings from '../../core/GlobalSettings';
-
+import {getUrlParams} from '../../core/utils';
 export function designer (settings = {}) {
 
+	// merge options from settings and from url params
+	//for safety reason settings options has higher privilege
+	let options = {};
+
+	if (settings.options) {
+		options  = {...settings.options};
+	}
+
+	const urlParams = getUrlParams(window.location.search);
+	if (urlParams) {
+		options = {...options, ...urlParams};
+	}
+
+
+	settings.options = options;
 	this.settings = settings;
+
+
 	const me = document.querySelector('script[data-name="aam-designer"]');
 	let bootstrap = false;
-	this.handoverKey =  settings.handoverKey;
+	this.handoverKey =  settings.handoverKey || settings.options.hKey;
 
-	
-	const globalSetting = new GlobalSettings();
-	// handoverkey handling 
-	globalSetting.handoverKeyByURL();
 	
 	if (me) {
 
@@ -61,7 +72,7 @@ export function designer (settings = {}) {
 			settings.callbacks.onError(error);
 		}
 
-		throw  new Error(error)
+		throw  new Error(error);
 
 	}
 

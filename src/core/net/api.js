@@ -1,17 +1,18 @@
 import axios from 'axios';
 import qs from 'qs';
-//const  = ServerSide.Configuration.Urls.Api;
-//const hostname = 'https://localhost/api';
-const hostname = 'https://devserver.serversidegraphics.com/pcs/api/v1';
-// https://devserver.serversidegraphics.com/pcs/api/v1/designers/21b32de0-09de-4ec2-a505-1a00eb9d3ac4
-import {LAYER_CATEGORY_ID} from '../constants';
-
+import {LAYER_CATEGORY_ID, environments} from '../constants';
+import AppSettings from '../AppSettings';
 
 export const CustomImageType = {
 	Image : "Image",
 	Facebook : "Facebook"
 };
 
+
+
+function getHostname() {
+	return environments[AppSettings.environment].apiurl;
+}
 
 
 function createQuery(arr) {
@@ -25,6 +26,7 @@ function createQuery(arr) {
 
 export async function performGetRequest(url) {
 
+
 	let  result;
 	try {
 		const response = await axios.get(url);
@@ -34,24 +36,6 @@ export async function performGetRequest(url) {
 	}
 
 	return result;
-
-	// return new Promise( (resolve, reject) => {
-	// 		axios.get(url).then( response => {
-	//
-	// 			if (response.status === 200) {
-	// 				resolve(response.data);
-	// 			} else {
-	// 				console.error('Oops. Api response has bad status', response.status);
-	// 				resolve(null);
-	// 			}
-	//
-	//
-	// 		}).catch( error => {
-	// 			console.error('Failed to perform api request', error);
-	// 			resolve(null);
-	// 		})
-	// });
-
 }
 
 
@@ -114,7 +98,7 @@ async function performPutRequest(url, data = {}) {
 
 
 export async function getDesigner(handoverKey) {
-	return await performGetRequest([hostname, 'designers', handoverKey ].join('/'));
+	return await performGetRequest([getHostname(), 'designers', handoverKey ].join('/'));
 }
 
 
@@ -123,30 +107,27 @@ export function getDataByUrl(url) {
 }
 
 export function createClient(handoverKey, params={} ) {
-	const url = [hostname, 'designers', handoverKey, 'clientdesigns'].join('/');
+	const url = [getHostname(), 'designers', handoverKey, 'clientdesigns'].join('/');
 	return performPostRequest(url, params, 'application/x-www-form-urlencoded');
 }
 
 
 export function getLanguage(handoverKey, lanugageId) {
-	return performGetRequest([hostname, 'designers', handoverKey, 'languages', lanugageId].join('/'))
+	return performGetRequest([getHostname(), 'designers', handoverKey, 'languages', lanugageId].join('/'))
 }
 
 export function submitLayer(handoverKey, layerType) {
 	const layerParam = `?type=${layerType}`;
-	return performPostRequest([hostname, 'designers', handoverKey, 'layers', layerParam].join('/'));
+	return performPostRequest([getHostname(), 'designers', handoverKey, 'layers', layerParam].join('/'));
 }
 
 export function submitCard(handoverKey, cardImageId, data) {
-	return performPutRequest([hostname, 'designers', handoverKey, 'clientdesigns', cardImageId].join('/'), data);
+	return performPutRequest([getHostname(), 'designers', handoverKey, 'clientdesigns', cardImageId].join('/'), data);
 }
 
 export function uploadCustomImage(handoverKey, cardImageId, layerId, blobData) {
 
-	return performBlobPostRequest([hostname, 'designers', handoverKey, 'ClientDesigns', cardImageId, `Uploads?layerid=${layerId}`].join('/'), blobData);
-	// var layerid = layer ? _module.LayerCategory[layer] : _module.LayerCategory.Card;
-	// return ServerSide.Network.RestClient.MakeRestPath('designers', designer.HandoverKey, 'ClientDesigns', client.CardImageId, 'Uploads?layerid=' + layerid + wrap);
-
+	return performBlobPostRequest([getHostname(), 'designers', handoverKey, 'ClientDesigns', cardImageId, `Uploads?layerid=${layerId}`].join('/'), blobData);
 }
 
 
@@ -209,13 +190,13 @@ export function getRedirect(url) {
 
 export function getImageUploadUrl(handoverKey, clientId, layerId) {
 	const layer = layerId ? LAYER_CATEGORY_ID[layerId] : LAYER_CATEGORY_ID.Card;
-	return [hostname, 'designers', handoverKey, 'ClientDesigns', clientId, `Uploads?layerid=${layer}`].join('/');
+	return [getHostname(), 'designers', handoverKey, 'ClientDesigns', clientId, `Uploads?layerid=${layer}`].join('/');
 }
 
 
 export function uploadImageByUrl(hanoverKey, clientId, url, imageType) {
 
-	const postUrl = [hostname, 'designers', hanoverKey, 'ClientDesigns', clientId, 'Uploads'].join('/');
+	const postUrl = [getHostname(), 'designers', hanoverKey, 'ClientDesigns', clientId, 'Uploads'].join('/');
 	return performPostRequest(postUrl, {Url : url, Type : imageType});
 
 }

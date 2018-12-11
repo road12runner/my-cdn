@@ -12,7 +12,6 @@ function getText(path, lanugageData) {
 		if (tokens.length  > 1) {
 			for (let i = 1; i < tokens.length; i++) {
 				val =  val[tokens[i]];
-				console.log(val, tokens[i]);
 			}
 
 		}
@@ -44,7 +43,9 @@ export default function localize( el , languageData) {
 	}
 
 	if (el.childNodes) {
-		el.childNodes.forEach( node =>  localize(node, languageData));
+		for (const node of el.childNodes) {
+			localize(node, languageData)
+		}
 	}
 
 }

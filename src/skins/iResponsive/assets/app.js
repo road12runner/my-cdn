@@ -1,9 +1,8 @@
 
-console.log('hello from app');
-
-var designer = new aam.designer({
+const designer = new aam.designer({
 	options: {
-		languageId: 'en-GB'
+		languageId: 'en-GB',
+		env: 'dev'
 	}
 
 });

@@ -1,25 +1,28 @@
 import * as api from '../../core/net/api';
 
-import designerTemplate from './templates/designer.tmpl';
 
 import MainContainer  from './MainContainer';
 import GalleryManager from '../../core/gallery/GaleryManager';
 import AppSettings from '../../core/AppSettings';
-import GlobalSettings from '../../core/GlobalSettings';
-
+import Error from './Error';
 
 const  DESKTOP_WIDTH_BREAKPOINT = 600;
+
+
 
 
 class App {
 	
 	constructor({settings, handoverKey, rootElement}) {
 
+		console.log('settings', settings);
+
 		this.settings = settings;
-		AppSettings.handoverKey = handoverKey;
 		this.rootElement = rootElement;
 		this.options = settings.options || {};
 
+		AppSettings.handoverKey = handoverKey;
+		AppSettings.environment = this.options.env || 'dev';
 		//this.parseSettings(settings);
 		
 		//$(this.rootElement).html('designer placeholder');
@@ -60,12 +63,6 @@ class App {
 				AppSettings.designerSettings.Language = that.options.languageId;
 			}
 
-
-			if (AppSettings.designerSettings.Galleries.Enabled === true && AppSettings.designerSettings.Galleries.URL) {
-			}
-
-
-
 			return response;
 		}
 
@@ -90,11 +87,7 @@ class App {
 
 		//load language data
 		async function loadLanguage() {
-			const langId = new GlobalSettings().langIdByURL();
-			let activeLanguage;
-			(langId) ? activeLanguage = langId : activeLanguage = AppSettings.designerSettings.Language;
-
-			const res = await api.getLanguage(AppSettings.handoverKey, activeLanguage);
+			const res = await api.getLanguage(AppSettings.handoverKey, AppSettings.designerSettings.Language);
 			AppSettings.Language = res || {};
 			AppSettings.Language.LanguageId = AppSettings.designerSettings.Language;
 			return res;
@@ -110,6 +103,9 @@ class App {
 
 			const mainContainer = new MainContainer(this.rootElement);
 			mainContainer.show();
+		}, error => {
+			console.log('error', error);
+			new Error(this.rootElement);
 		})
 
 

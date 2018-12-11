@@ -7,3 +7,16 @@ export function clearElement( el) {
 }
 
 
+
+// extract parameters from URL query
+export const getUrlParams = (search = '') => {
+	const hashes = search.slice(search.indexOf('?') + 1).split('&');
+	return hashes.reduce((acc, hash) => {
+		// eslint-disable-next-line
+		const [key, val] = hash.split('=');
+		return {
+			...acc,
+			[key]: decodeURIComponent(val)
+		};
+	}, {});
+};
